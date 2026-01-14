@@ -52,7 +52,7 @@ const modelWithTools = model.bindTools(tools);
 const callLlm = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
   return modelWithTools.invoke([
     new SystemMessage(
-      "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
+      "You are a helpful assistant tasked with performing arithmetic on a set of inputs ypu are also good at coding "
     ),
     ...messages,
   ]);
@@ -82,14 +82,36 @@ const agent = entrypoint({ name: "agent" }, async (messages: BaseMessage[]) => {
 });
 
 export async function* streamAgent(query: string) {
-  const stream = await agent.stream([new HumanMessage(query)]);
+  const messages: BaseMessage[] = [new HumanMessage(query)];
+  
+  while (true) {
+    const stream = await model.stream([
+      new SystemMessage(
+        "You are a helpful assistant tasked with performing arithmetic on a set of inputs ypu are also good at coding "
+      ),
+      ...messages,
+    ]);
 
-  for await (const chunk of stream) {
-    if (chunk.callLlm) {
-      const message = chunk.callLlm;
-      if (typeof message.content === "string" && !message.tool_calls?.length) {
-        yield message.content;
+    let fullResponse = "";
+    const chunks: any[] = [];
+    
+    for await (const chunk of stream) {
+      chunks.push(chunk);
+      if (typeof chunk.content === "string" && chunk.content) {
+        fullResponse += chunk.content;
+        yield chunk.content;
       }
     }
+
+    const lastChunk = chunks[chunks.length - 1];
+    if (!lastChunk?.tool_calls?.length) {
+      break;
+    }
+
+    messages.push(lastChunk);
+    const toolResults = await Promise.all(
+      lastChunk.tool_calls.map((toolCall: ToolCall) => callTool(toolCall))
+    );
+    messages.push(...toolResults);
   }
 }

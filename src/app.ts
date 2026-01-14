@@ -17,7 +17,9 @@ app.post("/chat", async (req, res) => {
 
   try {
     for await (const chunk of streamAgent(query)) {
-      res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+      res.write(
+        `event: response\ndata: ${JSON.stringify({ content: chunk })}\n\n`
+      );
     }
     res.write("data: [DONE]\n\n");
   } catch (error) {
@@ -29,6 +31,22 @@ app.post("/chat", async (req, res) => {
 app.get("/", (req, res) => {
   res.send("Server is up and running");
 });
+
+interface ErrorRequest extends express.Request {}
+
+interface ErrorResponse extends express.Response {}
+
+app.use(
+  (
+    err: Error,
+    req: ErrorRequest,
+    res: ErrorResponse,
+    next: express.NextFunction
+  ) => {
+    console.error("Unhandled error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+);
 
 const PORT = 3000;
 const server = app.listen(PORT, () => {
