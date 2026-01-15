@@ -4,8 +4,14 @@ import { loadPdf } from "../utils/pdfLoader";
 
 export const docsRetriever = tool(
   async ({ query }) => {
-    const docs = await loadPdf();
-    return `Retrieving documents for query: ${docs[0].pageContent}`;
+    const vectoreStrore = await loadPdf();
+    const results = await vectoreStrore.similaritySearch(query, 5);
+    // results.forEach((doc, i) => {
+    //   console.log(`Result ${i + 1}:`);
+    //   console.log(doc.pageContent);
+    // });
+    console.log("results.length", results.length);
+    return results.map((doc) => doc.pageContent).join("\n\n");
   },
   {
     name: "docsRetriever",
