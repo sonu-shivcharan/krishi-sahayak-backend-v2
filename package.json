@@ -20,6 +20,8 @@
     "@langchain/community": "^1.1.4",
     "@langchain/core": "^1.1.15",
     "@langchain/google-genai": "^2.1.8",
+    "@langchain/qdrant": "^1.0.1",
+    "@qdrant/js-client-rest": "^1.16.2",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "langchain": "^1.2.8",
