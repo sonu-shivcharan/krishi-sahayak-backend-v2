@@ -1,21 +1,27 @@
 import { tool } from "langchain";
 import z from "zod";
-import { loadPdf } from "../utils/pdfLoader";
+import { getQdrantStore } from "../utils/qdrantStore";
 
 export const docsRetriever = tool(
   async ({ query }) => {
-    const vectoreStrore = await loadPdf();
-    const results = await vectoreStrore.similaritySearch(query, 5);
-    // results.forEach((doc, i) => {
-    //   console.log(`Result ${i + 1}:`);
-    //   console.log(doc.pageContent);
-    // });
-    console.log("results.length", results.length);
-    return results.map((doc) => doc.pageContent).join("\n\n");
+    const vectorStore = await getQdrantStore();
+
+    const results = await vectorStore.similaritySearch(query, 5);
+
+    console.log("Qdrant results:", results);
+
+    return results
+      .map((doc, i) => `Source ${i + 1}:\n${doc.pageContent}`)
+      .join("\n\n");
   },
   {
     name: "docsRetriever",
-    description: "Search the customer database for records matching the query.",
-    schema: z.object({ query: z.string().describe("Users query") }),
+    description:
+      "Retrieve relevant agriculture-related documents from the knowledge base to answer farmer queries about crops, diseases, treatments, and government schemes.",
+    schema: z.object({
+      query: z
+        .string()
+        .describe("User question to search in agriculture knowledge base"),
+    }),
   }
 );
