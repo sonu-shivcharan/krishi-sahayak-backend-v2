@@ -1,7 +1,19 @@
 import express from "express";
-import chatRoutes from "./routes/chat.routes";
-
+import cors from "cors";
 export const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "16kb" }));
+app.use(express.urlencoded({ extended: true, limit: "16kb" }));
+app.use(express.static("public"));
+
+app.use(
+  cors({
+    origin: process.env.CORS_ORIGIN?.split(",") || "http://localhost:5173",
+    credentials: true,
+    methods: ["POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Authorization", "Content-Type"],
+  }),
+);
+
+import chatRoutes from "./routes/chat.routes";
 app.use("/api", chatRoutes);

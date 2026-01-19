@@ -8,7 +8,7 @@ export const docsRetriever = tool(
 
     const results = await vectorStore.similaritySearch(query, 5);
 
-    console.log("Qdrant results:", results);
+    // console.log("Qdrant results:", results);
 
     return results
       .map((doc, i) => `Source ${i + 1}:\n${doc.pageContent}`)
