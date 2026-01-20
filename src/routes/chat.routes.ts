@@ -1,8 +1,11 @@
 import { Router } from "express";
-import { chatController } from "../controllers/chat.controller";
+import {
+  chatController,
+  createGeminiLiveToken,
+} from "../controllers/chat.controller";
 
 const router = Router();
 
 router.post("/chat", chatController);
-
+router.post("/create-gemini-live-token", createGeminiLiveToken);
 export default router;

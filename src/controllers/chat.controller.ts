@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { runAgentWithStatus } from "../services/agent.service";
+import { AuthToken, GoogleGenAI } from "@google/genai";
 
 export async function chatController(req: Request, res: Response) {
   const { query } = req.body;
@@ -20,3 +21,21 @@ export async function chatController(req: Request, res: Response) {
 
   res.end();
 }
+
+export const createGeminiLiveToken = async (req: Request, res: Response) => {
+  const client = new GoogleGenAI({
+    apiKey: process.env.GOOGLE_GEMINI_API_KEY!,
+  });
+  const expireTime = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+  const token: AuthToken = await client.authTokens.create({
+    config: {
+      uses: 1,
+      expireTime: expireTime,
+      newSessionExpireTime: new Date(Date.now() + 1 * 60 * 1000).toISOString(), // Default 1 minute in the future
+      httpOptions: { apiVersion: "v1alpha" },
+    },
+  });
+
+  res.status(200).json({ message: "Token creation endpoint", token });
+};
