@@ -1,10 +1,14 @@
 import { createAgent } from "langchain";
 import { llm } from "../config/llm";
 import { docsRetriever } from "../tools/retrieveDocs";
-import { MemorySaver } from "@langchain/langgraph";
-// import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
-
-const checkpointer = new MemorySaver();
+import { MongoDBSaver } from "@langchain/langgraph-checkpoint-mongodb";
+import { MongoClient } from "mongodb";
+const client = new MongoClient(process.env.MONGODB_URL!);
+const checkpointer = new MongoDBSaver({
+  client,
+  checkpointCollectionName: "chechpointer",
+  dbName: "krishi-sahayak",
+});
 const systemPrompt = `
 You are "Krishi Sahayak", a Digital Krishi Officer designed to help farmers with clear,
 practical and reliable agricultural guidance.
