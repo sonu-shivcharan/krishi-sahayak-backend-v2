@@ -3,11 +3,12 @@ import { krishiAgent } from "../agents/krishiAgent";
 
 export async function runAgentWithStatus(
   query: string,
-  send: (event: string, data: any) => void
+  send: (event: string, data: any) => void,
 ) {
   const result = await krishiAgent.invoke(
     { messages: [new HumanMessage(query)] },
     {
+      configurable: { thread_id: "1" },
       callbacks: [
         {
           handleLLMStart() {
@@ -27,7 +28,7 @@ export async function runAgentWithStatus(
           },
         },
       ],
-    }
+    },
   );
 
   return result.messages.at(-1)?.content;

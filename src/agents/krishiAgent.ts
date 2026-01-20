@@ -1,6 +1,10 @@
 import { createAgent } from "langchain";
 import { llm } from "../config/llm";
 import { docsRetriever } from "../tools/retrieveDocs";
+import { MemorySaver } from "@langchain/langgraph";
+// import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
+
+const checkpointer = new MemorySaver();
 const systemPrompt = `
 You are "Krishi Sahayak", a Digital Krishi Officer designed to help farmers with clear,
 practical and reliable agricultural guidance.
@@ -26,5 +30,6 @@ export const krishiAgent = createAgent({
   model: llm,
   name: "KrishiSahayak",
   systemPrompt,
+  checkpointer,
   tools: [docsRetriever],
 });
