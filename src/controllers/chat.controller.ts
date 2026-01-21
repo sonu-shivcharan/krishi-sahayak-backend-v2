@@ -3,7 +3,7 @@ import { runAgentWithStatus } from "../services/agent.service";
 import { AuthToken, GoogleGenAI } from "@google/genai";
 
 export async function chatController(req: Request, res: Response) {
-  const { query } = req.body;
+  const { query, conversationId } = req.body;
 
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -13,7 +13,11 @@ export async function chatController(req: Request, res: Response) {
     res.write(`event:${event}\ndata:${JSON.stringify(data)}\n\n`);
   };
 
-  const result = await runAgentWithStatus(query, send);
+  const result = await runAgentWithStatus({
+    query,
+    conversationId,
+    sendFn: send,
+  });
 
   send("final", {
     answer: result,

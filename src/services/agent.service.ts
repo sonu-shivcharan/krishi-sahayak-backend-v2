@@ -1,30 +1,35 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { krishiAgent } from "../agents/krishiAgent";
 
-export async function runAgentWithStatus(
-  query: string,
-  send: (event: string, data: any) => void,
-) {
+export async function runAgentWithStatus({
+  query,
+  sendFn,
+  conversationId,
+}: {
+  query: string;
+  sendFn: (event: string, data: any) => void;
+  conversationId: string;
+}) {
   const result = await krishiAgent.invoke(
     { messages: [new HumanMessage(query)] },
     {
-      configurable: { thread_id: "1" },
+      configurable: { thread_id: conversationId },
       callbacks: [
         {
           handleLLMStart() {
-            send("status", { type: "thinking" });
+            sendFn("status", { type: "thinking" });
           },
           handleAgentAction(action) {
-            send("status", {
+            sendFn("status", {
               type: "tool_call",
               tool: action.tool,
             });
           },
           handleToolStart(tool) {
-            send("status", { type: "tool_start", tool: tool.name });
+            sendFn("status", { type: "tool_start", tool: tool.name });
           },
           handleToolEnd(output) {
-            send("status", { type: "tool_end", output });
+            sendFn("status", { type: "tool_end", output });
           },
         },
       ],
