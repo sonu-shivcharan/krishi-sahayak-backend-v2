@@ -16,4 +16,4 @@ app.use(
 );
 
 import chatRoutes from "./routes/chat.routes";
-app.use("/api", chatRoutes);
+app.use("/api/v1/chat", chatRoutes);

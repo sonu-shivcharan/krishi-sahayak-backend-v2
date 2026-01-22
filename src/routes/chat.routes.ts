@@ -6,6 +6,6 @@ import {
 
 const router = Router();
 
-router.post("/chat", chatController);
+router.post("/", chatController);
 router.post("/create-gemini-live-token", createGeminiLiveToken);
 export default router;
