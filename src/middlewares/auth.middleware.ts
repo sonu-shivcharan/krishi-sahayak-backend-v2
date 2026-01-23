@@ -1,67 +1,76 @@
+import { getAuth, requireAuth } from "@clerk/express";
 import { Request, Response, NextFunction } from "express";
+import { ApiError } from "../utils/apiError";
 
 // Extend Express Request to include user info
 declare global {
   namespace Express {
     interface Request {
-      userId?: string; // Clerk user ID
-      user?: any; // Full user object from Clerk
+      userId?: string; // Clerk user ID (set by middleware)
     }
   }
 }
 
-/**
- * Middleware to verify Clerk authentication token
- * This is a placeholder - you'll need to install @clerk/clerk-sdk-node
- * and implement proper token verification
- */
-export const verifyClerkToken = async (req: Request, res: Response, next: NextFunction) => {
+
+export const verifyClerkToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
   try {
-    const authHeader = req.headers.authorization;
+    // Get auth info from Clerk (requires clerkMiddleware() to be set up in app.ts)
+    const { userId } = getAuth(req);
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Unauthorized: No token provided" });
+    if (!userId) {
+      throw new ApiError(401, "Unauthorized: Authentication required");
     }
 
-    const token = authHeader.substring(7); // Remove "Bearer " prefix
-
-    // TODO: Verify token with Clerk SDK
-    // Example implementation (requires @clerk/clerk-sdk-node):
-    // const clerkClient = clerkClient();
-    // const decoded = await clerkClient.verifyToken(token);
-    // req.userId = decoded.sub; // Clerk user ID
-    // req.user = decoded;
-
-    // For now, we'll extract userId from token (temporary solution)
-    // In production, use Clerk SDK to verify the token properly
-    if (process.env.NODE_ENV === "development") {
-      // Development mode: accept token as-is (not secure, for testing only)
-      req.userId = token;
-    } else {
-      return res.status(401).json({ error: "Token verification not implemented. Please install @clerk/clerk-sdk-node" });
-    }
+    // Set userId on request for convenient access in controllers
+    req.userId = userId;
 
     next();
   } catch (error) {
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
+        statusCode: error.statusCode,
+        message: error.message,
+        errors: error.errors,
+        success: false,
+      });
+    }
+
     console.error("Auth middleware error:", error);
-    return res.status(401).json({ error: "Unauthorized: Invalid token" });
+    return res.status(401).json({
+      statusCode: 401,
+      message: "Unauthorized: Invalid token",
+      errors: [],
+      success: false,
+    });
   }
 };
 
 /**
- * Optional middleware - makes authentication optional
- * Sets req.userId if token is present, but doesn't fail if missing
+ * Re-export Clerk's requireAuth() for direct use
+ * This is the official Clerk middleware - use it like:
+ * router.get("/route", requireAuth(), controller);
  */
-export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const authHeader = req.headers.authorization;
+export { requireAuth };
 
-    if (authHeader && authHeader.startsWith("Bearer ")) {
-      const token = authHeader.substring(7);
-      // TODO: Verify token with Clerk SDK
-      if (process.env.NODE_ENV === "development") {
-        req.userId = token;
-      }
+/**
+ * Optional middleware - makes authentication optional
+ * Sets req.userId if user is authenticated, but doesn't fail if missing
+ * Useful for endpoints that work for both authenticated and unauthenticated users
+ */
+export const optionalAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { userId } = getAuth(req);
+
+    if (userId) {
+      req.userId = userId;
     }
 
     next();
