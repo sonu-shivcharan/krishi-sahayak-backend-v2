@@ -23,19 +23,19 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// // Ensure CORS headers are set on all responses (including errors)
-// app.use((req: Request, res: Response, next: NextFunction) => {
-//   const origin = req.headers.origin;
-//   const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || ["http://localhost:5173"];
+// Ensure CORS headers are set on all responses (including errors)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || ["http://localhost:5173"];
   
-//   if (origin && allowedOrigins.includes(origin)) {
-//     res.setHeader("Access-Control-Allow-Origin", origin);
-//     res.setHeader("Access-Control-Allow-Credentials", "true");
-//     res.setHeader("Access-Control-Allow-Methods", "POST, PATCH, PUT, DELETE, OPTIONS, GET");
-//     res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Requested-With");
-//   }
-//   next();
-// });
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "POST, PATCH, PUT, DELETE, OPTIONS, GET");
+    res.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Requested-With");
+  }
+  next();
+});
 
 // Clerk middleware - must be added before routes
 // This automatically verifies JWT tokens and adds req.auth
