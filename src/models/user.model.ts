@@ -15,13 +15,19 @@ const LocationSchema = new Schema(
       required: true,
       validate: {
         validator: function (coords: number[]) {
-          return coords.length === 2 && coords[0] >= -180 && coords[0] <= 180 && coords[1] >= -90 && coords[1] <= 90;
+          return (
+            coords.length === 2 &&
+            coords[0] >= -180 &&
+            coords[0] <= 180 &&
+            coords[1] >= -90 &&
+            coords[1] <= 90
+          );
         },
         message: "Coordinates must be [longitude, latitude] with valid ranges",
       },
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const UserSchema = new Schema<IUser>(
@@ -40,13 +46,14 @@ const UserSchema = new Schema<IUser>(
     },
     email: {
       type: String,
-      trim: true,
-      lowercase: true,
-      sparse: true,
-    },
-    profile: {
-      type: String,
       required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    profileImage: {
+      type: String,
+      required: false,
     },
     address: {
       type: String,
@@ -55,20 +62,23 @@ const UserSchema = new Schema<IUser>(
     },
     location: {
       type: LocationSchema,
-      required: true,
+      required: false,
     },
     role: {
       type: String,
       enum: Object.values(UserRole),
-      required: true,
+      default: UserRole.FARMER
     },
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Create geospatial index for location-based queries
-UserSchema.index({ location: "2dsphere" });
+UserSchema.index(
+  { location: "2dsphere" },
+  { partialFilterExpression: { location: { $exists: true } } },
+);
 
 export const User = mongoose.model<IUser>("User", UserSchema);

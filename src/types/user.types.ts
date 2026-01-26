@@ -11,7 +11,7 @@ export interface IUser {
   clerkId: string;
   name: string;
   email?: string;
-  profile: string; 
+  profileImage: string;
   address: string;
   location: ILocation;
   role: UserRole;
