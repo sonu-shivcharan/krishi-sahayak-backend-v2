@@ -1,88 +1,76 @@
 import { Request, Response } from "express";
 import { User } from "../models/user.model";
-import { UserRole } from "../types/enums";
+import { ApiError } from "../utils/apiError";
+import { RegisterUserInput } from "../validations/user.validation";
+import { User as ClerkUser } from "@clerk/express";
+import { asyncHandler } from "../utils/asyncHandler";
 
 /**
  * Register/Create a new user in MongoDB after Clerk authentication
  * This endpoint syncs Clerk user data with your MongoDB database
+ * Validation is handled by validate middleware
  */
-export const registerUser = async (req: Request, res: Response) => {
+export const registerUser = asyncHandler(async (req, res) => {
   try {
-    const { clerkId, name, email, profile, address, location, role } = req.body;
+    const { name, profileImage, address, location } =
+      req.body as RegisterUserInput;
 
-    // Validation
-    if (!clerkId || !name || !profile || !address || !location || !role) {
-      return res.status(400).json({
-        error: "Missing required fields",
-        required: ["clerkId", "name", "profile", "address", "location", "role"],
-      });
-    }
-
-    // Validate location format
-    if (!location.coordinates || !Array.isArray(location.coordinates) || location.coordinates.length !== 2) {
-      return res.status(400).json({
-        error: "Invalid location format. Expected: { type: 'Point', coordinates: [lng, lat] }",
-      });
-    }
-
-    // Validate role
-    if (!Object.values(UserRole).includes(role)) {
-      return res.status(400).json({
-        error: `Invalid role. Must be one of: ${Object.values(UserRole).join(", ")}`,
-      });
-    }
-
+    const { emailAddresses, id: clerkId } = req.clerkUser as ClerkUser;
+    const email = emailAddresses[0].emailAddress;
     // Check if user already exists
     const existingUser = await User.findOne({ clerkId });
     if (existingUser) {
-      // Update existing user
-      existingUser.name = name;
-      existingUser.email = email || existingUser.email;
-      existingUser.profile = profile;
-      existingUser.address = address;
-      existingUser.location = location;
-      existingUser.role = role;
-      await existingUser.save();
-
-      return res.status(200).json({
-        message: "User updated successfully",
-        user: existingUser,
-      });
+      throw new ApiError(409, "User already registered");
     }
-
     // Create new user
     const newUser = new User({
       clerkId,
       name,
       email,
-      profile,
+      profileImage,
       address,
       location,
-      role,
     });
 
     await newUser.save();
 
     res.status(201).json({
+      statusCode: 201,
       message: "User registered successfully",
-      user: newUser,
+      data: newUser,
+      success: true,
     });
   } catch (error: any) {
     console.error("Register user error:", error);
 
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
+        statusCode: error.statusCode,
+        message: error.message,
+        errors: error.errors,
+        success: false,
+      });
+    }
+
     if (error.code === 11000) {
-      // Duplicate key error (clerkId already exists)
+      // Duplicate key error (clerkId or email already exists)
+      const field = error.keyPattern?.email ? "email" : "clerkId";
       return res.status(409).json({
-        error: "User with this Clerk ID already exists",
+        statusCode: 409,
+        message: `User with this ${field} already exists`,
+        errors: [],
+        success: false,
       });
     }
 
     res.status(500).json({
-      error: "Failed to register user",
-      message: error.message,
+      statusCode: 500,
+      message: "Failed to register user",
+      errors: [],
+      success: false,
     });
   }
-};
+});
 
 /**
  * Get current user info (after Clerk authentication)
@@ -107,14 +95,18 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({
+      statusCode: 200,
       message: "User retrieved successfully",
-      user,
+      data: user,
+      success: true,
     });
   } catch (error: any) {
     console.error("Get current user error:", error);
     res.status(500).json({
-      error: "Failed to get user",
-      message: error.message,
+      statusCode: 500,
+      message: "Failed to get user",
+      errors: [],
+      success: false,
     });
   }
 };
@@ -135,21 +127,28 @@ export const getUserById = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({
+      statusCode: 200,
       message: "User retrieved successfully",
-      user,
+      data: user,
+      success: true,
     });
   } catch (error: any) {
     console.error("Get user by ID error:", error);
 
     if (error.name === "CastError") {
       return res.status(400).json({
-        error: "Invalid user ID format",
+        statusCode: 400,
+        message: "Invalid user ID format",
+        errors: [],
+        success: false,
       });
     }
 
     res.status(500).json({
-      error: "Failed to get user",
-      message: error.message,
+      statusCode: 500,
+      message: "Failed to get user",
+      errors: [],
+      success: false,
     });
   }
 };
@@ -157,6 +156,7 @@ export const getUserById = async (req: Request, res: Response) => {
 /**
  * Update user profile
  * Requires authentication middleware
+ * Validation is handled by validate middleware
  */
 export const updateUser = async (req: Request, res: Response) => {
   try {
@@ -164,53 +164,73 @@ export const updateUser = async (req: Request, res: Response) => {
 
     if (!clerkId) {
       return res.status(401).json({
-        error: "Unauthorized: User ID not found",
+        statusCode: 401,
+        message: "Unauthorized: User ID not found",
+        errors: [],
+        success: false,
       });
     }
 
-    const { name, email, profile, address, location, role } = req.body;
+    const { name, email, profileImage, address, location, role } = req.body;
 
     const user = await User.findOne({ clerkId });
 
     if (!user) {
       return res.status(404).json({
-        error: "User not found",
+        statusCode: 404,
+        message: "User not found",
+        errors: [],
+        success: false,
       });
     }
 
     // Update only provided fields
     if (name !== undefined) user.name = name;
     if (email !== undefined) user.email = email;
-    if (profile !== undefined) user.profile = profile;
+    if (profileImage !== undefined) user.profileImage = profileImage;
     if (address !== undefined) user.address = address;
     if (location !== undefined) {
-      if (!location.coordinates || !Array.isArray(location.coordinates) || location.coordinates.length !== 2) {
-        return res.status(400).json({
-          error: "Invalid location format. Expected: { type: 'Point', coordinates: [lng, lat] }",
-        });
-      }
       user.location = location;
     }
     if (role !== undefined) {
-      if (!Object.values(UserRole).includes(role)) {
-        return res.status(400).json({
-          error: `Invalid role. Must be one of: ${Object.values(UserRole).join(", ")}`,
-        });
-      }
       user.role = role;
     }
 
     await user.save();
 
     res.status(200).json({
+      statusCode: 200,
       message: "User updated successfully",
-      user,
+      data: user,
+      success: true,
     });
   } catch (error: any) {
     console.error("Update user error:", error);
+
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
+        statusCode: error.statusCode,
+        message: error.message,
+        errors: error.errors,
+        success: false,
+      });
+    }
+
+    if (error.code === 11000) {
+      // Duplicate key error (email already exists)
+      return res.status(409).json({
+        statusCode: 409,
+        message: "User with this email already exists",
+        errors: [],
+        success: false,
+      });
+    }
+
     res.status(500).json({
-      error: "Failed to update user",
-      message: error.message,
+      statusCode: 500,
+      message: "Failed to update user",
+      errors: [],
+      success: false,
     });
   }
 };
