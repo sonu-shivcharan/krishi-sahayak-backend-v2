@@ -1,4 +1,4 @@
-import { getAuth, requireAuth } from "@clerk/express";
+import { clerkClient, getAuth, requireAuth, User } from "@clerk/express";
 import { Request, Response, NextFunction } from "express";
 import { ApiError } from "../utils/apiError";
 
@@ -7,10 +7,10 @@ declare global {
   namespace Express {
     interface Request {
       userId?: string; // Clerk user ID (set by middleware)
+      clerkUser?: User;
     }
   }
 }
-
 
 export const verifyClerkToken = async (
   req: Request,
@@ -18,15 +18,15 @@ export const verifyClerkToken = async (
   next: NextFunction,
 ) => {
   try {
-    // Get auth info from Clerk (requires clerkMiddleware() to be set up in app.ts)
     const { userId } = getAuth(req);
 
     if (!userId) {
-      throw new ApiError(401, "Unauthorized: Authentication required");
+      throw new ApiError(401, "Authentication required");
     }
-
+    const user = await clerkClient.users.getUser(userId);
     // Set userId on request for convenient access in controllers
     req.userId = userId;
+    req.clerkUser = user;
 
     next();
   } catch (error) {
