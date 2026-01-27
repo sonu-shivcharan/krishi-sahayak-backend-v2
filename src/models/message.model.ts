@@ -12,7 +12,6 @@ const MessageSchema = new Schema<IMessage>(
     sender: {
       type: Schema.Types.ObjectId,
       ref: "User",
-      required: true,
     },
     senderRole: {
       type: String,
@@ -49,6 +48,12 @@ MessageSchema.index({ conversation: 1, createdAt: -1 });
 MessageSchema.index({ sender: 1 });
 
 MessageSchema.pre("validate", function () {
+  if (this.senderRole === MessageSenderRole.FARMER) {
+    if (!this.sender) {
+      throw new Error("Sender is required for farmer messages");
+    }
+  }
+
   if (this.type === "media" && (!this.files || this.files.length === 0)) {
     return new Error("Media messages must have files");
   }
@@ -57,6 +62,9 @@ MessageSchema.pre("validate", function () {
     throw new Error("Text messages must have text");
   }
 
+  if (this.type === "system" && !this.text) {
+    throw new Error("System messages must have the text field set");
+  }
   if (this.type === "system" && (this.files?.length || this.sender)) {
     throw new Error("System messages cannot have sender or files");
   }
