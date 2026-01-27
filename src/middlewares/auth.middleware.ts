@@ -1,13 +1,21 @@
-import { clerkClient, getAuth, requireAuth, User } from "@clerk/express";
+import {
+  clerkClient,
+  getAuth,
+  requireAuth,
+  User as clerkUser,
+} from "@clerk/express";
 import { Request, Response, NextFunction } from "express";
 import { ApiError } from "../utils/apiError";
+import { User } from "../models";
+import { IUser } from "../types/user.types";
 
 // Extend Express Request to include user info
 declare global {
   namespace Express {
     interface Request {
       userId?: string; // Clerk user ID (set by middleware)
-      clerkUser?: User;
+      clerkUser?: clerkUser;
+      user: IUser;
     }
   }
 }
@@ -19,15 +27,18 @@ export const verifyClerkToken = async (
 ) => {
   try {
     const { userId } = getAuth(req);
-
+    console.log("userId", userId);
     if (!userId) {
       throw new ApiError(401, "Authentication required");
     }
-    const user = await clerkClient.users.getUser(userId);
-    // Set userId on request for convenient access in controllers
-    req.userId = userId;
-    req.clerkUser = user;
-
+    const clerkUser = await clerkClient.users.getUser(userId);
+    const user = await User.findOne({ clerkId: userId });
+    if (!user) {
+      throw new ApiError(404, "User not found. Please register first.");
+    }
+    // Set userId on request for convenient access in controller
+    req.clerkUser = clerkUser;
+    req.user = user;
     next();
   } catch (error) {
     if (error instanceof ApiError) {
