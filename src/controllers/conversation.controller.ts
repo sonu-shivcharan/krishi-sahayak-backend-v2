@@ -1,0 +1,111 @@
+import { Conversation, Message } from "../models";
+import { runAgentWithStatus } from "../services/agent.service";
+import { MessageSenderRole, MessageType } from "../types/enums";
+import { ApiError } from "../utils/apiError";
+import { asyncHandler } from "../utils/asyncHandler";
+
+async function createConversation(userId: string) {
+  try {
+    const conversation = await Conversation.create({ user: userId });
+    if (!conversation) {
+      throw new Error("Conversation not created");
+    }
+    return conversation;
+  } catch (error) {
+    console.error("Error creating conversation:", error);
+    throw new Error("Failed to create conversation");
+  }
+}
+const startConversation = asyncHandler(async (req, res) => {
+  const { message, files } = req.body;
+  const userId = req.user._id.toString();
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+  const send = (event: string, data: any) => {
+    res.write(`event:${event}\ndata:${JSON.stringify(data)}\n\n`);
+  };
+  const conversation = await createConversation(userId);
+
+  const newMessage = await Message.create({
+    conversation: conversation._id.toString(),
+    sender: userId,
+    senderRole: MessageSenderRole.FARMER,
+    type: MessageType.TEXT,
+    text: message,
+    files,
+  });
+  if (!newMessage) {
+    throw new ApiError(500, "failed to create a message");
+  }
+  send("initial", {
+    conversationId: conversation._id.toString(),
+    messageId: newMessage._id.toString(),
+  });
+  const result = await runAgentWithStatus({
+    query: message,
+    conversationId: conversation._id.toString(),
+    sendFn: send,
+  });
+
+  send("final", {
+    answer: result,
+  });
+  const aiMessage = await Message.create({
+    conversation: conversation._id,
+    senderRole: MessageSenderRole.BOT,
+    type: MessageType.TEXT,
+    text: result,
+  });
+
+  res.end();
+});
+
+const sendMessage = asyncHandler(async (req, res) => {
+  const { message, files } = req.body;
+  const { conversationId } = req.params;
+  const userId = req.user._id.toString();
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+  const send = (event: string, data: any) => {
+    res.write(`event:${event}\ndata:${JSON.stringify(data)}\n\n`);
+  };
+
+  const newMessage = await Message.create({
+    conversation: conversationId,
+    sender: userId,
+    senderRole: MessageSenderRole.FARMER,
+    type: MessageType.TEXT,
+    text: message,
+    files,
+  });
+  if (!newMessage) {
+    throw new ApiError(500, "failed to create a message");
+  }
+  send("initial", {
+    messageId: newMessage._id.toString(),
+  });
+
+  const result = await runAgentWithStatus({
+    query: message,
+    conversationId: conversationId as string,
+    sendFn: send,
+  });
+
+  send("final", {
+    answer: result,
+  });
+  const aiMessage = await Message.create({
+    conversation: conversationId,
+    senderRole: MessageSenderRole.BOT,
+    type: MessageType.TEXT,
+    text: result,
+  });
+
+  res.end();
+});
+
+export { startConversation, sendMessage };
