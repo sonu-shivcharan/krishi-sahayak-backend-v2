@@ -1,4 +1,3 @@
-
 export enum UserRole {
   FARMER = "farmer",
   OFFICER = "officer",
@@ -12,8 +11,7 @@ export enum MessageSenderRole {
 
 export enum MessageType {
   TEXT = "text",
-  IMAGE = "image",
-  PDF = "pdf",
+  MEDIA = "media",
   SYSTEM = "system",
 }
 

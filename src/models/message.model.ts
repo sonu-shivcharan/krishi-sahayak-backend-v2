@@ -41,11 +41,27 @@ const MessageSchema = new Schema<IMessage>(
   },
   {
     timestamps: false, // Using custom createdAt field
-  }
+  },
 );
 
 // Index for efficient querying
 MessageSchema.index({ conversation: 1, createdAt: -1 });
 MessageSchema.index({ sender: 1 });
+
+MessageSchema.pre("validate", function () {
+  if (this.type === "media" && (!this.files || this.files.length === 0)) {
+    return new Error("Media messages must have files");
+  }
+
+  if (this.type === "text" && !this.text) {
+    throw new Error("Text messages must have text");
+  }
+
+  if (this.type === "system" && (this.files?.length || this.sender)) {
+    throw new Error("System messages cannot have sender or files");
+  }
+
+  return;
+});
 
 export const Message = mongoose.model<IMessage>("Message", MessageSchema);
