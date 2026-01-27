@@ -9,7 +9,7 @@ export async function runAgentWithStatus({
   query: string;
   sendFn: (event: string, data: any) => void;
   conversationId: string;
-}) {
+}): Promise<string | undefined> {
   const result = await krishiAgent.invoke(
     { messages: [new HumanMessage(query)] },
     {
@@ -29,12 +29,12 @@ export async function runAgentWithStatus({
             sendFn("status", { type: "tool_start", tool: tool.name });
           },
           handleToolEnd(output) {
-            sendFn("status", { type: "tool_end", output });
+            sendFn("status", { type: "tool_end", status: output.status });
           },
         },
       ],
     },
   );
 
-  return result.messages.at(-1)?.content;
+  return result.messages.at(-1)?.content.toString();
 }
