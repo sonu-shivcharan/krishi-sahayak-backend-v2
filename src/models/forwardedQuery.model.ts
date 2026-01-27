@@ -22,12 +22,6 @@ const ForwardedQuerySchema = new Schema<IForwardedQuery>(
       type: String,
       trim: true,
     },
-    files: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "File",
-      },
-    ],
     status: {
       type: String,
       enum: Object.values(ForwardedQueryStatus),
@@ -44,7 +38,7 @@ const ForwardedQuerySchema = new Schema<IForwardedQuery>(
   },
   {
     timestamps: false, // Using custom timestamp fields
-  }
+  },
 );
 
 // Index for efficient querying
@@ -52,4 +46,7 @@ ForwardedQuerySchema.index({ conversation: 1 });
 ForwardedQuerySchema.index({ forwardedBy: 1 });
 ForwardedQuerySchema.index({ answeredBy: 1 });
 
-export const ForwardedQuery = mongoose.model<IForwardedQuery>("ForwardedQuery", ForwardedQuerySchema);
+export const ForwardedQuery = mongoose.model<IForwardedQuery>(
+  "ForwardedQuery",
+  ForwardedQuerySchema,
+);
