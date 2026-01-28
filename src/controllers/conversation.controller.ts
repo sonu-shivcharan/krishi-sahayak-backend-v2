@@ -1,8 +1,10 @@
+import mongoose, { PaginateOptions } from "mongoose";
 import { Conversation, Message } from "../models";
 import { runAgentWithStatus } from "../services/agent.service";
 import { MessageSenderRole, MessageType } from "../types/enums";
 import { ApiError } from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
+import { ApiResponse } from "../utils/apiResponse";
 
 async function createConversation(userId: string) {
   try {
@@ -108,4 +110,40 @@ const sendMessage = asyncHandler(async (req, res) => {
   res.end();
 });
 
-export { startConversation, sendMessage };
+const getUserConversations = asyncHandler(async (req, res) => {
+  const userId = req.user._id.toString();
+  const options: PaginateOptions = {
+    page: Number(req.query.page) || 1,
+    limit: Number(req.query.limit) || 10,
+    offset: Number(req.query.skip) || 0,
+  };
+  const sortBy = (req.query.sortBy as string) || "updatedAt";
+  const sortDir = req.query.sortType === "asc" ? 1 : -1; // or '1'/'-1'
+  const conversations = await Conversation.aggregatePaginate(
+    [
+      {
+        $match: {
+          user: new mongoose.Types.ObjectId(userId),
+        },
+      },
+      {
+        $sort: { [sortBy]: sortDir },
+      },
+    ],
+    {
+      ...options,
+    },
+  );
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { userId, conversations },
+        "User conversations fetched sucessfully",
+      ),
+    );
+});
+
+export { startConversation, sendMessage, getUserConversations };
