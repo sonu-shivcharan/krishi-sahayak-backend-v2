@@ -7,8 +7,9 @@ import {
 import { verifyClerkToken } from "../middlewares/auth.middleware";
 
 const router = Router();
-
-router.post("/start", verifyClerkToken, startConversation);
-router.post("/:conversationId", verifyClerkToken, sendMessage);
+router.use(verifyClerkToken);
+router.get("/", getUserConversations);
+router.post("/start", startConversation);
+router.post("/:conversationId", sendMessage);
 
 export default router;
