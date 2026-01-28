@@ -1,6 +1,6 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, AggregatePaginateModel } from "mongoose";
 import { IConversation } from "../types/conversation.types";
-
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 const ConversationSchema = new Schema<IConversation>(
   {
     user: {
@@ -16,8 +16,9 @@ const ConversationSchema = new Schema<IConversation>(
 
 // Index for efficient querying
 ConversationSchema.index({ user: 1, updatedAt: -1 });
+ConversationSchema.plugin(mongooseAggregatePaginate);
 
-export const Conversation = mongoose.model<IConversation>(
-  "Conversation",
-  ConversationSchema,
-);
+export const Conversation = mongoose.model<
+  IConversation,
+  AggregatePaginateModel<IConversation>
+>("Conversation", ConversationSchema);
