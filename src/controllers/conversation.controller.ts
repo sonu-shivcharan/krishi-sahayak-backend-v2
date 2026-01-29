@@ -5,10 +5,19 @@ import { MessageSenderRole, MessageType } from "../types/enums";
 import { ApiError } from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiResponse } from "../utils/apiResponse";
+import { llm } from "../config/llm";
 
-async function createConversation(userId: string) {
+async function generateConversationTitle(message: string) {
+  return (
+    await llm.invoke(
+      `Write a single concise title that reflects the main idea of the message. Output only the title:\n${message}`,
+    )
+  ).content as string;
+}
+
+async function createConversation(userId: string, title: string) {
   try {
-    const conversation = await Conversation.create({ user: userId });
+    const conversation = await Conversation.create({ user: userId, title });
     if (!conversation) {
       throw new Error("Conversation not created");
     }
@@ -28,7 +37,8 @@ const startConversation = asyncHandler(async (req, res) => {
   const send = (event: string, data: any) => {
     res.write(`event:${event}\ndata:${JSON.stringify(data)}\n\n`);
   };
-  const conversation = await createConversation(userId);
+  const conversationTitle = await generateConversationTitle(message);
+  const conversation = await createConversation(userId, conversationTitle);
 
   const newMessage = await Message.create({
     conversation: conversation._id.toString(),
@@ -43,6 +53,7 @@ const startConversation = asyncHandler(async (req, res) => {
   }
   send("initial", {
     conversationId: conversation._id.toString(),
+    conversationTitle,
     messageId: newMessage._id.toString(),
   });
   const result = await runAgentWithStatus({
