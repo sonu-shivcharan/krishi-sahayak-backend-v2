@@ -8,6 +8,11 @@ const ConversationSchema = new Schema<IConversation>(
       ref: "User",
       required: true,
     },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
   },
   {
     timestamps: true,
