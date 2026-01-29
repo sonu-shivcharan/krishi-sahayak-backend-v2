@@ -1,4 +1,4 @@
-import mongoose, { PaginateOptions } from "mongoose";
+import mongoose, { isValidObjectId, PaginateOptions } from "mongoose";
 import { Conversation, Message } from "../models";
 import { runAgentWithStatus } from "../services/agent.service";
 import { MessageSenderRole, MessageType } from "../types/enums";
@@ -78,6 +78,9 @@ const startConversation = asyncHandler(async (req, res) => {
 const sendMessage = asyncHandler(async (req, res) => {
   const { message, files } = req.body;
   const { conversationId } = req.params;
+  if (!isValidObjectId(conversationId)) {
+    throw new ApiError(409, "Invalid conversationId");
+  }
   const userId = req.user._id.toString();
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -111,7 +114,8 @@ const sendMessage = asyncHandler(async (req, res) => {
   send("final", {
     answer: result,
   });
-  const aiMessage = await Message.create({
+  // creating ai message
+  await Message.create({
     conversation: conversationId,
     senderRole: MessageSenderRole.BOT,
     type: MessageType.TEXT,
