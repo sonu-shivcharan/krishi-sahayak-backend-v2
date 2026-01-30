@@ -60,6 +60,7 @@ const startConversation = asyncHandler(async (req, res) => {
     query: message,
     conversationId: conversation._id.toString(),
     sendFn: send,
+    userId,
   });
 
   send("final", {
@@ -109,6 +110,7 @@ const sendMessage = asyncHandler(async (req, res) => {
     query: message,
     conversationId: conversationId as string,
     sendFn: send,
+    userId,
   });
 
   send("final", {
