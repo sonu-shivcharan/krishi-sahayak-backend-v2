@@ -1,8 +1,10 @@
-import { createAgent } from "langchain";
+import { createAgent, createMiddleware, tool } from "langchain";
 import { llm } from "../config/llm";
 import { docsRetriever } from "../tools/retrieveDocs";
 import { MongoDBSaver } from "@langchain/langgraph-checkpoint-mongodb";
 import { MongoClient } from "mongodb";
+import z from "zod";
+import { getUserProfileFromDB } from "../tools/getUserProfileFromDB";
 const client = new MongoClient(process.env.MONGODB_URL!);
 const checkpointer = new MongoDBSaver({
   client,
@@ -29,11 +31,39 @@ Answer Style:
 - If information is uncertain, recommend consulting local agriculture officers.
 
 `;
+const contextSchema = z.object({
+  userId: z.string().optional(),
+});
+type Context = z.infer<typeof contextSchema>;
 
+const toolMonitoringMiddlerware = createMiddleware({
+  name: "toolMonitoringMiddlerware",
+  contextSchema,
+  wrapToolCall: async (request, handler) => {
+    console.log("request.tool", request.tool.name, request.toolCall);
+    return handler({ ...request });
+  },
+});
+
+const getWeather = tool(
+  ({ location }) => {
+    // Dummy implementation - replace with actual weather fetching logic
+    return `The current weather in ${location} is sunny with a temperature of 25°C.`;
+  },
+  {
+    name: "getWeather",
+    description: "Get the current weather information for a given location.",
+    schema: z.object({
+      location: z.string().describe("The location to get the weather for."),
+    }),
+  },
+);
 export const krishiAgent = createAgent({
   model: llm,
   name: "KrishiSahayak",
   systemPrompt,
   checkpointer,
-  tools: [docsRetriever],
+  contextSchema,
+  tools: [docsRetriever, getUserProfileFromDB, getWeather],
+  middleware: [toolMonitoringMiddlerware],
 });

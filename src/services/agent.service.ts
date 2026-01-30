@@ -5,14 +5,19 @@ export async function runAgentWithStatus({
   query,
   sendFn,
   conversationId,
+  userId,
 }: {
   query: string;
   sendFn: (event: string, data: any) => void;
   conversationId: string;
+  userId?: string;
 }): Promise<string | undefined> {
   const result = await krishiAgent.invoke(
     { messages: [new HumanMessage(query)] },
     {
+      context: {
+        userId,
+      },
       configurable: { thread_id: conversationId },
       callbacks: [
         {

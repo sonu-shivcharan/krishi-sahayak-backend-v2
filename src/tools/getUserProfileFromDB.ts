@@ -3,9 +3,9 @@ import z from "zod";
 import { getUserById } from "../helpers/user.helpers";
 
 export const getUserProfileFromDB = tool(
-  async ({ userId }) => {
+  async (_, { context }) => {
+    const userId = context.userId;
     const user = await getUserById({ userId });
-
     return {
       id: user._id.toString(),
       name: user.name,
@@ -21,9 +21,7 @@ export const getUserProfileFromDB = tool(
   {
     name: "getUserProfileFromDB",
     description:
-      "Fetches the authenticated user's profile details from the database for personalization. Use this tool when you need the user's name, contact info, or location-based context to provide a personalized response.",
-    schema: z.object({
-      userId: z.string().describe("Clerk user ID of the authenticated user"),
-    }),
+      "Fetches the authenticated user's profile details from the database for personalization. Use this tool when you need the user's name, contact info, or location-based context to provide a personalized response",
+    schema: z.object({}),
   },
 );
