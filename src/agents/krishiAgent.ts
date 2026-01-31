@@ -34,7 +34,7 @@ Answer Style:
 const contextSchema = z.object({
   userId: z.string().optional(),
 });
-type Context = z.infer<typeof contextSchema>;
+export type ContextSchema = z.infer<typeof contextSchema>;
 
 const toolMonitoringMiddlerware = createMiddleware({
   name: "toolMonitoringMiddlerware",

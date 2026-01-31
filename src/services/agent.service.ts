@@ -1,5 +1,6 @@
 import { HumanMessage } from "@langchain/core/messages";
-import { krishiAgent } from "../agents/krishiAgent";
+import { ContextSchema, krishiAgent } from "../agents/krishiAgent";
+import { threadId } from "worker_threads";
 
 export async function runAgentWithStatus({
   query,
@@ -42,4 +43,67 @@ export async function runAgentWithStatus({
   );
 
   return result.messages.at(-1)?.content.toString();
+}
+
+interface ExecuteAgentParams {
+  query: string;
+  conversationId: string;
+  sendResponseFn: (event: string, data: any) => void;
+  context?: ContextSchema;
+}
+export async function executeAgent({
+  query,
+  conversationId,
+  sendResponseFn,
+  context,
+}: ExecuteAgentParams) {
+  console.log("conversationId", conversationId);
+  const stream = krishiAgent.streamEvents(
+    {
+      messages: [new HumanMessage(query)],
+    },
+    {
+      context,
+      configurable: { thread_id: conversationId },
+      callbacks: [
+        {
+          handleLLMStart() {
+            sendResponseFn("status", { type: "thinking" });
+          },
+          handleToolStart(
+            tool,
+            input,
+            runId,
+            _parentRunId,
+            _tags,
+            _metadata,
+            runName,
+          ) {
+            sendResponseFn("status", { type: "toolCall", name: tool.name });
+          },
+          handleToolEnd(output, runId, parentRunId, tags) {
+            sendResponseFn("status", {
+              type: "toolCall",
+              name: output.name,
+            });
+          },
+          // handleLLMEnd(output, runId, parentRunId, tags, extraParams) {
+          //   sendResponseFn("status", { type: "processing" });
+          // },
+        },
+      ],
+    },
+  );
+  let fullMessage = "";
+  for await (const chunk of stream) {
+    const chunkContent = chunk.data.chunk?.content;
+    if (chunkContent) {
+      const data = {
+        chunkContent,
+      };
+      fullMessage += data;
+      sendResponseFn("chunk", data);
+    }
+  }
+  return fullMessage;
 }
