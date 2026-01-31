@@ -1,11 +1,13 @@
 import mongoose, { isValidObjectId, PaginateOptions } from "mongoose";
 import { Conversation, Message } from "../models";
-import { runAgentWithStatus } from "../services/agent.service";
+import { executeAgent, runAgentWithStatus } from "../services/agent.service";
 import { MessageSenderRole, MessageType } from "../types/enums";
 import { ApiError } from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiResponse } from "../utils/apiResponse";
 import { llm } from "../config/llm";
+import { krishiAgent } from "../agents/krishiAgent";
+import { HumanMessage } from "langchain";
 
 async function generateConversationTitle(message: string) {
   return (
@@ -56,17 +58,15 @@ const startConversation = asyncHandler(async (req, res) => {
     conversationTitle,
     messageId: newMessage._id.toString(),
   });
-  const result = await runAgentWithStatus({
+
+  const result = await executeAgent({
     query: message,
     conversationId: conversation._id.toString(),
-    sendFn: send,
-    userId,
+    sendResponseFn: send,
+    context: { userId },
   });
-
-  send("final", {
-    answer: result,
-  });
-  const aiMessage = await Message.create({
+  send("end", null);
+  await Message.create({
     conversation: conversation._id,
     senderRole: MessageSenderRole.BOT,
     type: MessageType.TEXT,
@@ -106,16 +106,13 @@ const sendMessage = asyncHandler(async (req, res) => {
     messageId: newMessage._id.toString(),
   });
 
-  const result = await runAgentWithStatus({
+  const result = await executeAgent({
     query: message,
-    conversationId: conversationId as string,
-    sendFn: send,
-    userId,
+    conversationId: conversationId.toString(),
+    sendResponseFn: send,
+    context: { userId },
   });
 
-  send("final", {
-    answer: result,
-  });
   // creating ai message
   await Message.create({
     conversation: conversationId,
@@ -123,7 +120,7 @@ const sendMessage = asyncHandler(async (req, res) => {
     type: MessageType.TEXT,
     text: result,
   });
-
+  send("end", null);
   res.end();
 });
 
@@ -162,5 +159,59 @@ const getUserConversations = asyncHandler(async (req, res) => {
       ),
     );
 });
+const testStreamEvents = asyncHandler(async (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+  const { message, conversationId } = req.body;
+  const stream = krishiAgent.streamEvents(
+    {
+      messages: [new HumanMessage(message)],
+    },
+    {
+      streamMode: "updates",
+      configurable: { thread_id: conversationId },
+      context: { userId: req.user._id.toString() },
+    },
+  );
 
-export { startConversation, sendMessage, getUserConversations };
+  for await (let e of stream) {
+    const chunkContent = e.data.chunk?.content;
+    if (chunkContent) {
+      const data = {
+        chunkContent,
+      };
+      // console.log("chunkContent", chunkContent);
+      res.write(`event: chunk\ndata:${JSON.stringify(data)}\n\n`);
+      console.log("e", chunkContent);
+    }
+    if (e.data.output) {
+      const messages = e.data.output?.messages;
+      if (messages) {
+        const lastMessage = messages[messages.length - 1];
+        if (lastMessage?.content) {
+          for (const c of lastMessage.content) {
+            if (c.type === "functionCall") {
+              res.write(
+                `event:${"functionCall"}\ndata:${JSON.stringify(c)}\n\n`,
+              );
+            }
+          }
+        }
+        // res.write(
+        //   `event:${"message"}\ndata:${JSON.stringify(lastMessage?.content)}\n\n`,
+        // );
+      }
+    }
+  }
+  res.write(`event:${"end"}\ndata:null}\n\n`);
+  return res.end();
+});
+
+export {
+  startConversation,
+  sendMessage,
+  getUserConversations,
+  testStreamEvents,
+};
