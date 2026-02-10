@@ -78,7 +78,7 @@ export const registerUser = asyncHandler(async (req, res) => {
  */
 export const getCurrentUser = async (req: Request, res: Response) => {
   try {
-    const clerkId = req.userId;
+    const clerkId = req.clerkUser?.id;
 
     if (!clerkId) {
       return res.status(401).json({
