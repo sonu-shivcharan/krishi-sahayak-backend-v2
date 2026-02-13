@@ -71,11 +71,13 @@ app.use(clerkMiddleware());
 import chatRoutes from "./routes/chat.routes";
 import userRoutes from "./routes/user.routes";
 import conversationRoutes from "./routes/conversation.routes";
+import forwardedQueriesRoutes from "./routes/forwardedQueries.routes";
 
 app.use("/api/v1/chat", chatRoutes);
 app.use("/api/v1/users", userRoutes);
 
 app.use("/api/v1/conversations", conversationRoutes);
+app.use("/api/v1/forwarded-queries", forwardedQueriesRoutes);
 
 //global error handler
 app.use(
