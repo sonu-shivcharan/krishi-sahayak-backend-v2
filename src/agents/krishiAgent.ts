@@ -6,7 +6,7 @@ import { MongoClient } from "mongodb";
 import z from "zod";
 import { getUserProfileFromDB } from "../tools/getUserProfileFromDB";
 const client = new MongoClient(process.env.MONGODB_URL!);
-const checkpointer = new MongoDBSaver({
+export const checkpointer = new MongoDBSaver({
   client,
   checkpointCollectionName: "chechpointer",
   dbName: "krishi-sahayak",
