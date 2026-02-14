@@ -8,7 +8,7 @@ import { getUserProfileFromDB } from "../tools/getUserProfileFromDB";
 const client = new MongoClient(process.env.MONGODB_URL!);
 export const checkpointer = new MongoDBSaver({
   client,
-  checkpointCollectionName: "chechpointer",
+  checkpointCollectionName: "checkpointer",
   dbName: "krishi-sahayak",
 });
 const systemPrompt = `
