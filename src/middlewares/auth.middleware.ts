@@ -3,6 +3,7 @@ import {
   getAuth,
   requireAuth,
   User as clerkUser,
+  verifyToken,
 } from "@clerk/express";
 import { Request, Response, NextFunction } from "express";
 import { ApiError } from "../utils/apiError";
@@ -26,8 +27,13 @@ export const verifyClerkToken = async (
   next: NextFunction,
 ) => {
   try {
-    const { userId } = getAuth(req);
-    console.log("userId", userId);
+    // const { userId } = getAuth(req);
+    // console.log("userId", userId);
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const { sub: userId } = await verifyToken(token!, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+    });
+    // console.log("sub", sub);
     if (!userId) {
       throw new ApiError(401, "Authentication required");
     }
