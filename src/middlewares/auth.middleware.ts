@@ -66,6 +66,46 @@ export const verifyClerkToken = async (
   }
 };
 
+export const verifyClerkTokenForRegistration = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    const { sub: userId } = await verifyToken(token!, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+    });
+
+    if (!userId) {
+      throw new ApiError(401, "Authentication required");
+    }
+
+    const clerkUser = await clerkClient.users.getUser(userId);
+
+    req.clerkUser = clerkUser;
+    // Do NOT check MongoDB user existence here
+    next();
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({
+        statusCode: error.statusCode,
+        message: error.message,
+        errors: error.errors,
+        success: false,
+      });
+    }
+
+    console.error("Auth middleware error:", error);
+    return res.status(401).json({
+      statusCode: 401,
+      message: "Unauthorized: Invalid token",
+      errors: [],
+      success: false,
+    });
+  }
+};
+
 /**
  * Re-export Clerk's requireAuth() for direct use
  * This is the official Clerk middleware - use it like:

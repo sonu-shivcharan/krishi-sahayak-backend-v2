@@ -5,7 +5,10 @@ import {
   getUserById,
   updateUser,
 } from "../controllers/user.controller";
-import { verifyClerkToken } from "../middlewares/auth.middleware";
+import {
+  verifyClerkToken,
+  verifyClerkTokenForRegistration,
+} from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validation.middleware";
 import {
   registerUserSchema,
@@ -17,7 +20,7 @@ const router = Router();
 router.post(
   "/register",
   validate(registerUserSchema),
-  verifyClerkToken,
+  verifyClerkTokenForRegistration,
   registerUser,
 );
 

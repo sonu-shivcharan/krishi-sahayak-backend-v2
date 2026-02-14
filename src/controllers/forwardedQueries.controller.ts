@@ -23,11 +23,7 @@ export const forwardQuery = asyncHandler(async (req, res) => {
     taluka?: string;
   } | null = null;
 
-  if (
-    req.body.location &&
-    req.body.location.lat &&
-    req.body.location.lng
-  ) {
+  if (req.body.location && req.body.location.lat && req.body.location.lng) {
     locationData = {
       lat: req.body.location.lat,
       lng: req.body.location.lng,
@@ -117,3 +113,7 @@ export const forwardQuery = asyncHandler(async (req, res) => {
     ),
   );
 });
+
+// export const getForwardedQueries = asyncHandler(async (req, res) => {
+//   const user = req.user;
+//   const { page = 1, limit = 10 } = req.query;
