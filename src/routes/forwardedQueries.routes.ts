@@ -4,6 +4,6 @@ import { verifyClerkToken } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-router.post("/", verifyClerkToken, forwardQuery);
+router.post("/forward", verifyClerkToken, forwardQuery);
 
 export default router;

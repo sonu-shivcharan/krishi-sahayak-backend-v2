@@ -5,10 +5,18 @@ export interface IForwardedQuery {
   _id: Types.ObjectId;
   conversation: Types.ObjectId;
   forwardedBy: Types.ObjectId;
+  targetOfficers: Types.ObjectId[];
+  location: {
+    type: "Point";
+    coordinates: [number, number]; // [lng, lat]
+    district?: string;
+    taluka?: string;
+  };
+  status: ForwardedQueryStatus;
+  claimedBy?: Types.ObjectId;
+  claimedAt?: Date;
   answeredBy?: Types.ObjectId;
   answer?: string;
-  files?: Types.ObjectId[];
-  status: ForwardedQueryStatus;
-  forwardedAt: Date;
   answeredAt?: Date;
+  forwardedAt: Date;
 }

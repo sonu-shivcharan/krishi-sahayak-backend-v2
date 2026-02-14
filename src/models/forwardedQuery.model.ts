@@ -14,37 +14,84 @@ const ForwardedQuerySchema = new Schema<IForwardedQuery>(
       ref: "User",
       required: true,
     },
-    answeredBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
-    answer: {
-      type: String,
-      trim: true,
+    targetOfficers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        index: true,
+      },
+    ],
+    location: {
+      type: new Schema(
+        {
+          type: {
+            type: String,
+            enum: ["Point"],
+            default: "Point",
+            required: true,
+          },
+          coordinates: {
+            type: [Number], // [lng, lat]
+            required: true,
+            validate: {
+              validator(coords: number[]) {
+                return (
+                  Array.isArray(coords) &&
+                  coords.length === 2 &&
+                  Number.isFinite(coords[0]) &&
+                  Number.isFinite(coords[1]) &&
+                  coords[0] >= -180 &&
+                  coords[0] <= 180 &&
+                  coords[1] >= -90 &&
+                  coords[1] <= 90
+                );
+              },
+              message: "Coordinates must be [longitude, latitude]",
+            },
+          },
+          district: String,
+          taluka: String,
+        },
+        { _id: false },
+      ),
+      required: false,
     },
     status: {
       type: String,
       enum: Object.values(ForwardedQueryStatus),
-      required: true,
       default: ForwardedQueryStatus.PENDING,
+      index: true,
     },
+    claimedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    claimedAt: Date,
+    answeredBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    answer: String,
+    answeredAt: Date,
     forwardedAt: {
       type: Date,
       default: Date.now,
     },
-    answeredAt: {
-      type: Date,
-    },
   },
   {
-    timestamps: false, // Using custom timestamp fields
+    timestamps: false,
   },
 );
 
 // Index for efficient querying
 ForwardedQuerySchema.index({ conversation: 1 });
 ForwardedQuerySchema.index({ forwardedBy: 1 });
-ForwardedQuerySchema.index({ answeredBy: 1 });
+// Status is already indexed in schema definition
+ForwardedQuerySchema.index({ "location.district": 1, "location.taluka": 1 });
+ForwardedQuerySchema.index(
+  { location: "2dsphere" },
+  { partialFilterExpression: { location: { $exists: true } } },
+);
 
 export const ForwardedQuery = mongoose.model<IForwardedQuery>(
   "ForwardedQuery",
