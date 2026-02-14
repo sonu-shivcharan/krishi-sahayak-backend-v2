@@ -23,6 +23,14 @@ export enum FileType {
 
 export enum ForwardedQueryStatus {
   PENDING = "pending",
+  CLAIMED = "claimed",
   ANSWERED = "answered",
   CLOSED = "closed",
+}
+
+export enum NotificationType {
+  NEW_QUERY = "NEW_QUERY",
+  QUERY_CLAIMED = "QUERY_CLAIMED",
+  QUERY_ANSWERED = "QUERY_ANSWERED",
+  SYSTEM = "SYSTEM",
 }
