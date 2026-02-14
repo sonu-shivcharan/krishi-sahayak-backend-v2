@@ -27,6 +27,7 @@
     "@langchain/qdrant": "^1.0.1",
     "@livekit/agents-plugin-google": "1.x",
     "@qdrant/js-client-rest": "^1.16.2",
+    "axios": "^1.13.5",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",

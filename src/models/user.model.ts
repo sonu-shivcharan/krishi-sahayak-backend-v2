@@ -7,28 +7,32 @@ const LocationSchema = new Schema(
     type: {
       type: String,
       enum: ["Point"],
-      required: true,
       default: "Point",
+      required: true,
     },
     coordinates: {
-      type: [Number],
+      type: [Number], // [lng, lat]
       required: true,
       validate: {
-        validator: function (coords: number[]) {
+        validator(coords: number[]) {
           return (
+            Array.isArray(coords) &&
             coords.length === 2 &&
+            Number.isFinite(coords[0]) &&
+            Number.isFinite(coords[1]) &&
             coords[0] >= -180 &&
             coords[0] <= 180 &&
             coords[1] >= -90 &&
             coords[1] <= 90
           );
         },
-        message: "Coordinates must be [longitude, latitude] with valid ranges",
+        message: "Coordinates must be [longitude, latitude]",
       },
     },
   },
-  { _id: false },
+  { _id: false }
 );
+
 
 const UserSchema = new Schema<IUser>(
   {
