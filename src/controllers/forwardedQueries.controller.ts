@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import { isValidObjectId } from "mongoose";
 import { Conversation, ForwardedQuery, User, Notification } from "../models";
 import { ApiError } from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -9,7 +9,9 @@ import { UserRole, NotificationType } from "../types/enums";
 export const forwardQuery = asyncHandler(async (req, res) => {
   const { conversationId } = req.body;
   const user = req.user;
-
+  if (!isValidObjectId(conversationId)) {
+    throw new ApiError(400, "Invalid conversationId");
+  }
   const conversation = await Conversation.findById(conversationId);
   if (!conversation) {
     throw new ApiError(404, "Conversation not found");
