@@ -1,6 +1,6 @@
 import mongoose, { isValidObjectId, PaginateOptions } from "mongoose";
 import { Conversation, Message } from "../models";
-import { executeAgent, runAgentWithStatus } from "../services/agent.service";
+import { executeAgent } from "../services/agent.service";
 import { MessageSenderRole, MessageType } from "../types/enums";
 import { ApiError } from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
@@ -30,7 +30,7 @@ async function createConversation(userId: string, title: string) {
   }
 }
 const startConversation = asyncHandler(async (req, res) => {
-  const { message, files } = req.body;
+  const { message, files, region } = req.body;
   const userId = req.user._id.toString();
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -63,7 +63,8 @@ const startConversation = asyncHandler(async (req, res) => {
     query: message,
     conversationId: conversation._id.toString(),
     sendResponseFn: send,
-    context: { userId },
+    context: { userId,region },
+    
   });
   send("end", null);
   await Message.create({
@@ -77,7 +78,7 @@ const startConversation = asyncHandler(async (req, res) => {
 });
 
 const sendMessage = asyncHandler(async (req, res) => {
-  const { message, files } = req.body;
+  const { message, files, region } = req.body;
   const { conversationId } = req.params;
   if (!isValidObjectId(conversationId)) {
     throw new ApiError(409, "Invalid conversationId");
@@ -111,6 +112,7 @@ const sendMessage = asyncHandler(async (req, res) => {
     conversationId: conversationId.toString(),
     sendResponseFn: send,
     context: { userId },
+    region,
   });
 
   // creating ai message
