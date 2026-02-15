@@ -1,23 +1,28 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { ContextSchema, krishiAgent } from "../agents/krishiAgent";
-import { threadId } from "worker_threads";
 
+
+/**@deprecated use executeAgent instead */
 export async function runAgentWithStatus({
   query,
   sendFn,
   conversationId,
   userId,
+  region,
 }: {
   query: string;
   sendFn: (event: string, data: any) => void;
+
   conversationId: string;
   userId?: string;
+  region?: string;
 }): Promise<string | undefined> {
   const result = await krishiAgent.invoke(
     { messages: [new HumanMessage(query)] },
     {
       context: {
         userId,
+        region,
       },
       configurable: { thread_id: conversationId },
       callbacks: [
@@ -50,6 +55,7 @@ interface ExecuteAgentParams {
   conversationId: string;
   sendResponseFn: (event: string, data: any) => void;
   context?: ContextSchema;
+  region?: string;
 }
 export async function executeAgent({
   query,
@@ -63,7 +69,7 @@ export async function executeAgent({
       messages: [new HumanMessage(query)],
     },
     {
-      context,
+      context: { ...context },
       configurable: { thread_id: conversationId },
       callbacks: [
         {
