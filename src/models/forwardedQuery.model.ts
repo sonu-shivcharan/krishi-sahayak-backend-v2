@@ -1,6 +1,7 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, AggregatePaginateModel } from "mongoose";
 import { IForwardedQuery } from "../types/forwardedQuery.types";
 import { ForwardedQueryStatus } from "../types/enums";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const ForwardedQuerySchema = new Schema<IForwardedQuery>(
   {
@@ -93,7 +94,8 @@ ForwardedQuerySchema.index(
   { partialFilterExpression: { location: { $exists: true } } },
 );
 
-export const ForwardedQuery = mongoose.model<IForwardedQuery>(
-  "ForwardedQuery",
-  ForwardedQuerySchema,
-);
+ForwardedQuerySchema.plugin(mongooseAggregatePaginate);
+export const ForwardedQuery = mongoose.model<
+  IForwardedQuery,
+  AggregatePaginateModel<IForwardedQuery>
+>("ForwardedQuery", ForwardedQuerySchema);

@@ -1,10 +1,11 @@
-import { isValidObjectId } from "mongoose";
+import { isValidObjectId, PaginateOptions } from "mongoose";
 import { Conversation, ForwardedQuery, User, Notification } from "../models";
 import { ApiError } from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiResponse } from "../utils/apiResponse";
 import { reverseGeocode } from "../helpers/location";
 import { UserRole, NotificationType } from "../types/enums";
+import mongoose from "mongoose";
 
 export const forwardQuery = asyncHandler(async (req, res) => {
   const { conversationId } = req.body;
@@ -116,6 +117,23 @@ export const forwardQuery = asyncHandler(async (req, res) => {
   );
 });
 
-// export const getForwardedQueries = asyncHandler(async (req, res) => {
-//   const user = req.user;
-//   const { page = 1, limit = 10 } = req.query;
+export const getForwardedQueriesForOfficer = asyncHandler(async (req, res) => {
+  const user = req.user;
+  const { page = 1, limit = 10 } = req.query;
+  const paginateOptions: PaginateOptions = {
+    page: Number(page),
+    limit: Number(limit),
+  };
+  const queries = await ForwardedQuery.aggregatePaginate(
+    [
+      {
+        $match: {
+          targetOfficers: new mongoose.Types.ObjectId(user._id),
+        },
+      },
+    ],
+    paginateOptions,
+  );
+
+  return res.status(200).json(new ApiResponse(200, queries));
+});
