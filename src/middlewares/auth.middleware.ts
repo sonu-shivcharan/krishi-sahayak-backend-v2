@@ -9,6 +9,7 @@ import { Request, Response, NextFunction } from "express";
 import { ApiError } from "../utils/apiError";
 import { User } from "../models";
 import { IUser } from "../types/user.types";
+import { UserRole } from "../types/enums";
 
 // Extend Express Request to include user info
 declare global {
@@ -27,13 +28,13 @@ export const verifyClerkToken = async (
   next: NextFunction,
 ) => {
   try {
-    // const { userId } = getAuth(req);
-    // console.log("userId", userId);
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    const { sub: userId } = await verifyToken(token!, {
-      secretKey: process.env.CLERK_SECRET_KEY,
-    });
-    // console.log("sub", sub);
+    const { userId } = getAuth(req);
+    console.log("userId", userId);
+    // const token = req.headers.authorization?.replace("Bearer ", "");
+    // const { sub: userId } = await verifyToken(token!, {
+    //   secretKey: process.env.CLERK_SECRET_KEY,
+    // });
+    // // console.log("sub", sub);
     if (!userId) {
       throw new ApiError(401, "Authentication required");
     }
@@ -136,3 +137,40 @@ export const optionalAuth = async (
     next();
   }
 };
+
+type VerifyUserParams = {
+  requiredRole?: UserRole;
+};
+export function verifyUser({
+  requiredRole = UserRole.FARMER,
+}: VerifyUserParams) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { userId } = getAuth(req);
+      if (!userId) {
+        throw new ApiError(401, "Authentication required");
+      }
+      const user = await User.findOne({ clerkId: userId });
+      if (!user) {
+        throw new ApiError(
+          404,
+          "User not found. Please complete your registration",
+        );
+      }
+      req.user = user;
+      if (user.role !== requiredRole) {
+        throw new ApiError(403, "Forbidden: Insufficient permissions");
+      }
+      next();
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return res.status(error.statusCode).json({
+          statusCode: error.statusCode,
+          message: error.message,
+          errors: error.errors,
+          success: false,
+        });
+      }
+    }
+  };
+}
