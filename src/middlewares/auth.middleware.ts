@@ -143,7 +143,7 @@ type VerifyUserParams = {
 };
 export function verifyUser({
   requiredRole = UserRole.FARMER,
-}: VerifyUserParams) {
+}: VerifyUserParams = {}) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { userId } = getAuth(req);
