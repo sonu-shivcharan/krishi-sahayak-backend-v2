@@ -6,7 +6,6 @@ import { MongoClient } from "mongodb";
 import z from "zod";
 import { getUserProfileFromDB } from "../tools/getUserProfileFromDB";
 
-
 const client = new MongoClient(process.env.MONGODB_URL!);
 
 export const checkpointer = new MongoDBSaver({
@@ -14,7 +13,6 @@ export const checkpointer = new MongoDBSaver({
   checkpointCollectionName: "checkpointer",
   dbName: "krishi-sahayak",
 });
-
 
 const systemPrompt = `
 You are "Krishi Sahayak", a Digital Krishi Officer designed to help farmers with clear,
@@ -40,13 +38,11 @@ Tool Usage Rules:
 
 - **"getCurrentDate"**: Use this when the user asks for the current date, time, or day generally (e.g., "What is today's date?", "What time is it?").
 
-
 Answer Style:
 - Be concise, farmer-friendly, and practical.
 - Prefer bullet points or short steps where helpful.
 - If information is uncertain, recommend consulting local agriculture officers.
 `;
-
 
 const contextSchema = z.object({
   userId: z.string().optional(),
@@ -58,7 +54,12 @@ const toolMonitoringMiddlerware = createMiddleware({
   name: "toolMonitoringMiddlerware",
   contextSchema,
   wrapToolCall: async (request, handler) => {
-    console.log("request.tool", request.tool.name, request.toolCall);
+    console.log(
+      "request.tool",
+      request.tool.name,
+      request.toolCall,
+      request.toolCall.args,
+    );
     return handler({ ...request });
   },
 });
