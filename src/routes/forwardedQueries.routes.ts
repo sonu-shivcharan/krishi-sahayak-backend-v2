@@ -1,17 +1,27 @@
 import { Router } from "express";
 import {
   forwardQuery,
-  getForwardedQueriesForOfficer,
+  getMyForwardedQueries,
+  getOfficerForwardedQueries,
 } from "../controllers/forwardedQueries.controller";
-import { verifyClerkToken, verifyUser } from "../middlewares/auth.middleware";
+import { verifyUser } from "../middlewares/auth.middleware";
 import { UserRole } from "../types/enums";
 
 const router = Router();
 
-router.post("/forward", verifyClerkToken, forwardQuery);
+// Forward a conversation query to nearby officers
+router.post("/forward", verifyUser(), forwardQuery);
+
+// Get all queries forwarded by the logged-in user (Farmer)
+router.get("/me", verifyUser(), getMyForwardedQueries);
+
+
+// officer only routes
+// Get all queries forwarded to the logged-in officer
 router.get(
   "/",
   verifyUser({ requiredRole: UserRole.OFFICER }),
-  getForwardedQueriesForOfficer,
+  getOfficerForwardedQueries,
 );
+
 export default router;

@@ -7,7 +7,7 @@ import { reverseGeocode } from "../helpers/location";
 import { UserRole, NotificationType } from "../types/enums";
 import mongoose from "mongoose";
 
-export const forwardQuery = asyncHandler(async (req, res) => {
+const forwardQuery = asyncHandler(async (req, res) => {
   const { conversationId } = req.body;
   const user = req.user;
   if (!isValidObjectId(conversationId)) {
@@ -117,7 +117,30 @@ export const forwardQuery = asyncHandler(async (req, res) => {
   );
 });
 
-export const getForwardedQueriesForOfficer = asyncHandler(async (req, res) => {
+const getMyForwardedQueries = asyncHandler(async (req, res) => {
+  const user = req.user;
+  const { page = 1, limit = 10 } = req.query;
+  const paginateOptions: PaginateOptions = {
+    page: Number(page),
+    limit: Number(limit),
+  };
+  const queries = await ForwardedQuery.aggregatePaginate(
+    [
+      {
+        $match: {
+          forwardedBy: new mongoose.Types.ObjectId(user._id),
+        },
+      },
+    ],
+    paginateOptions,
+  );
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, queries, "Queries fetched successfully"));
+});
+
+const getOfficerForwardedQueries = asyncHandler(async (req, res) => {
   const user = req.user;
   const { page = 1, limit = 10 } = req.query;
   const paginateOptions: PaginateOptions = {
@@ -137,3 +160,9 @@ export const getForwardedQueriesForOfficer = asyncHandler(async (req, res) => {
 
   return res.status(200).json(new ApiResponse(200, queries));
 });
+
+export {
+  getMyForwardedQueries,
+  getOfficerForwardedQueries,
+  forwardQuery,
+};
