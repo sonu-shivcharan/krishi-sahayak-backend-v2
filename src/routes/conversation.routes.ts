@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  getUserConversationMessages,
   getUserConversations,
   sendMessage,
   startConversation,
@@ -13,5 +14,6 @@ router.get("/", getUserConversations);
 router.post("/start", startConversation);
 router.post("/test", testStreamEvents);
 router.post("/:conversationId", sendMessage);
+router.get("/:conversationId", getUserConversationMessages);
 
 export default router;

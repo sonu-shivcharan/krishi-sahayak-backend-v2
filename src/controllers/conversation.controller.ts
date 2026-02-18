@@ -63,8 +63,7 @@ const startConversation = asyncHandler(async (req, res) => {
     query: message,
     conversationId: conversation._id.toString(),
     sendResponseFn: send,
-    context: { userId,region },
-    
+    context: { userId, region },
   });
   send("end", null);
   await Message.create({
@@ -111,8 +110,7 @@ const sendMessage = asyncHandler(async (req, res) => {
     query: message,
     conversationId: conversationId.toString(),
     sendResponseFn: send,
-    context: { userId },
-    region,
+    context: { userId, region },
   });
 
   // creating ai message
@@ -159,6 +157,50 @@ const getUserConversations = asyncHandler(async (req, res) => {
         { userId, conversations },
         "User conversations fetched sucessfully",
       ),
+    );
+});
+
+const getUserConversationMessages = asyncHandler(async (req, res) => {
+  const userId = req.user._id.toString();
+  const { conversationId } = req.params;
+  const options: PaginateOptions = {
+    page: Number(req.query.page) || 1,
+    limit: Number(req.query.limit) || 10,
+    offset: Number(req.query.skip) || 0,
+  };
+  const sortBy = (req.query.sortBy as string) || "updatedAt";
+  const sortDir = req.query.sortType === "asc" ? 1 : -1; // or '1'/'-1'
+
+  if (!isValidObjectId(conversationId)) {
+    throw new ApiError(409, "Invalid conversationId");
+  }
+
+  const conversation = await Conversation.findById(conversationId);
+  if (!conversation) {
+    throw new ApiError(404, "Conversation not found");
+  }
+  // if (conversation.user !== new mongoose.Types.ObjectId(userId)) {
+  //   throw new ApiError(403, "Unauthorized");
+  // }
+  const messages = await Message.aggregatePaginate(
+    [
+      {
+        $match: {
+          conversation: new mongoose.Types.ObjectId(conversationId.toString()),
+        },
+      },
+      {
+        $sort: { [sortBy]: sortDir },
+      },
+    ],
+    {
+      ...options,
+    },
+  );
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, messages, "User conversation fetched successfully"),
     );
 });
 const testStreamEvents = asyncHandler(async (req, res) => {
@@ -215,5 +257,6 @@ export {
   startConversation,
   sendMessage,
   getUserConversations,
+  getUserConversationMessages,
   testStreamEvents,
 };
