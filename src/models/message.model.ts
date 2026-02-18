@@ -1,6 +1,7 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, AggregatePaginateModel } from "mongoose";
 import { IMessage } from "../types/message.types";
 import { MessageSenderRole, MessageType } from "../types/enums";
+import mongooseAggregatePaginate from "mongoose-aggregate-paginate-v2";
 
 const MessageSchema = new Schema<IMessage>(
   {
@@ -71,5 +72,9 @@ MessageSchema.pre("validate", function () {
 
   return;
 });
+MessageSchema.plugin(mongooseAggregatePaginate);
 
-export const Message = mongoose.model<IMessage>("Message", MessageSchema);
+export const Message = mongoose.model<
+  IMessage,
+  AggregatePaginateModel<IMessage>
+>("Message", MessageSchema);
