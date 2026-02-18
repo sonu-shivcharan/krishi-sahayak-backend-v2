@@ -1,7 +1,6 @@
 import { HumanMessage } from "@langchain/core/messages";
 import { ContextSchema, krishiAgent } from "../agents/krishiAgent";
 
-
 /**@deprecated use executeAgent instead */
 export async function runAgentWithStatus({
   query,
@@ -107,7 +106,7 @@ export async function executeAgent({
       const data = {
         chunkContent,
       };
-      fullMessage += data;
+      fullMessage += data.chunkContent;
       sendResponseFn("chunk", data);
     }
   }
