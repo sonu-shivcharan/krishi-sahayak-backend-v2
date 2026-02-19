@@ -167,6 +167,9 @@ const getUserConversationMessages = asyncHandler(async (req, res) => {
     page: Number(req.query.page) || 1,
     limit: Number(req.query.limit) || 10,
     offset: Number(req.query.skip) || 0,
+    customLabels: {
+      docs: "messages",
+    },
   };
   const sortBy = (req.query.sortBy as string) || "updatedAt";
   const sortDir = req.query.sortType === "asc" ? 1 : -1; // or '1'/'-1'
@@ -179,9 +182,9 @@ const getUserConversationMessages = asyncHandler(async (req, res) => {
   if (!conversation) {
     throw new ApiError(404, "Conversation not found");
   }
-  // if (conversation.user !== new mongoose.Types.ObjectId(userId)) {
-  //   throw new ApiError(403, "Unauthorized");
-  // }
+  if (conversation.user.toString() !== userId) {
+    throw new ApiError(403, "Unauthorized");
+  }
   const messages = await Message.aggregatePaginate(
     [
       {
