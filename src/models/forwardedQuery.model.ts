@@ -94,6 +94,11 @@ ForwardedQuerySchema.index(
   { partialFilterExpression: { location: { $exists: true } } },
 );
 
+ForwardedQuerySchema.pre("save", function () {
+  if (this.isModified(this.answer)) {
+    this.answeredAt = new Date();
+  }
+});
 ForwardedQuerySchema.plugin(mongooseAggregatePaginate);
 export const ForwardedQuery = mongoose.model<
   IForwardedQuery,
