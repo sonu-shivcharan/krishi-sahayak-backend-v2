@@ -18,8 +18,14 @@ const NotificationSchema = new Schema<INotification>(
     title: String,
     message: String,
     data: {
-      queryId: Schema.Types.ObjectId,
-      conversationId: Schema.Types.ObjectId,
+      queryId: {
+        type: Schema.Types.ObjectId,
+        ref: "ForwardedQuery",
+      },
+      conversationId: {
+        type: Schema.Types.ObjectId,
+        ref: "Conversation",
+      },
     },
     isRead: {
       type: Boolean,
