@@ -4,9 +4,14 @@ import { ApiError } from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiResponse } from "../utils/apiResponse";
 import { reverseGeocode } from "../helpers/location";
-import { UserRole, NotificationType } from "../types/enums";
+import {
+  UserRole,
+  NotificationType,
+  ForwardedQueryStatus,
+} from "../types/enums";
 import mongoose from "mongoose";
 
+// user access controllers
 const forwardQuery = asyncHandler(async (req, res) => {
   const { conversationId } = req.body;
   const user = req.user;
@@ -140,6 +145,7 @@ const getMyForwardedQueries = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, queries, "Queries fetched successfully"));
 });
 
+// officer access controllers
 const getOfficerForwardedQueries = asyncHandler(async (req, res) => {
   const user = req.user;
   const { page = 1, limit = 10 } = req.query;
@@ -161,8 +167,75 @@ const getOfficerForwardedQueries = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, queries));
 });
 
+const getForwaredQuery = asyncHandler(async (req, res) => {
+  const { forwardedQueryId } = req.params;
+  // const { conversation } = req.query;
+  if (!isValidObjectId(forwardedQueryId)) {
+    throw new ApiError(400, "Invalid forwardedQueryId");
+  }
+  const forwardedQuery = await ForwardedQuery.findById(forwardedQueryId);
+  if (!forwardedQuery) {
+    throw new ApiError(404, "Forwarded query not found");
+  }
+  const officerId = req.user._id;
+  if (!forwardedQuery.targetOfficers.includes(officerId)) {
+    throw new ApiError(403, "You are not authorized to view this query");
+  }
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { forwardQuery },
+        "Fowarded query fetched successfully",
+      ),
+    );
+});
+
+const answerForwardedQuery = asyncHandler(async (req, res) => {
+  const { forwardedQueryId } = req.params;
+  const { answer } = req.body;
+  if (!isValidObjectId(forwardedQueryId)) {
+    throw new ApiError(400, "Invalid forwardedQueryId");
+  }
+  const forwardedQuery = await ForwardedQuery.findById(forwardedQueryId);
+  if (!forwardedQuery) {
+    throw new ApiError(404, "Forwarded query not found");
+  }
+  const officerId = req.user._id;
+  if (!forwardedQuery.targetOfficers.includes(officerId)) {
+    throw new ApiError(403, "You are not authorized to answer this query");
+  }
+  forwardedQuery.answer = answer;
+  forwardedQuery.status = ForwardedQueryStatus.ANSWERED;
+  forwardedQuery.answeredBy = officerId;
+  await forwardedQuery.save({ validateBeforeSave: false });
+  // Notify the farmer
+  await Notification.create({
+    user: forwardedQuery.forwardedBy,
+    type: NotificationType.QUERY_ANSWERED,
+    title: "Your Query has been Answered",
+    message: `Your forwarded query has been answered by an officer.`,
+    data: {
+      queryId: forwardedQuery._id,
+      conversationId: forwardedQuery.conversation,
+    },
+  });
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { forwardedQuery },
+        "Query answered and notified the farmer",
+      ),
+    );
+});
+
 export {
   getMyForwardedQueries,
   getOfficerForwardedQueries,
+  getForwaredQuery,
   forwardQuery,
+  answerForwardedQuery,
 };
