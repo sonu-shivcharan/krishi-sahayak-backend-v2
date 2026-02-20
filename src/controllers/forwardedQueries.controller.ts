@@ -10,6 +10,7 @@ import {
   ForwardedQueryStatus,
 } from "../types/enums";
 import mongoose from "mongoose";
+import { forwardQueryService } from "../services/forwardedQuery.service";
 
 // user access controllers
 const forwardQuery = asyncHandler(async (req, res) => {
@@ -177,6 +178,7 @@ const getForwaredQuery = asyncHandler(async (req, res) => {
   if (!forwardedQuery) {
     throw new ApiError(404, "Forwarded query not found");
   }
+  console.log("forwardedQuery", forwardedQuery);
   const officerId = req.user._id;
   if (!forwardedQuery.targetOfficers.includes(officerId)) {
     throw new ApiError(403, "You are not authorized to view this query");
@@ -186,7 +188,7 @@ const getForwaredQuery = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { forwardQuery },
+        { forwardedQuery },
         "Fowarded query fetched successfully",
       ),
     );
@@ -210,6 +212,11 @@ const answerForwardedQuery = asyncHandler(async (req, res) => {
   forwardedQuery.status = ForwardedQueryStatus.ANSWERED;
   forwardedQuery.answeredBy = officerId;
   await forwardedQuery.save({ validateBeforeSave: false });
+
+  //
+  forwardQueryService.ingestQuery({
+    forwardedQueryId: forwardedQueryId.toString(),
+  });
   // Notify the farmer
   await Notification.create({
     user: forwardedQuery.forwardedBy,
