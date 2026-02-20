@@ -1,17 +1,23 @@
+// tools/docsRetriever.ts
 import { tool } from "langchain";
 import z from "zod";
-import { getQdrantStore } from "../utils/qdrantStore";
+import { qdrantClient, COLLECTION_NAME } from "../utils/qdrantStore";
 
 export const docsRetriever = tool(
   async ({ query }) => {
-    const vectorStore = await getQdrantStore();
+    const result = await qdrantClient.query(COLLECTION_NAME, {
+      query: {
+        text: query,
+        model: "sentence-transformers/all-minilm-l6-v2",
+      },
+      limit: 5,
+      with_payload: true,
+    });
 
-    const results = await vectorStore.similaritySearch(query, 5);
-
-    // console.log("Qdrant results:", results);
-
-    return results
-      .map((doc, i) => `Source ${i + 1}:\n${doc.pageContent}`)
+    return result.points
+      .map(
+        (point, i) => `Source ${i + 1}:\n${point.payload?.page_content ?? ""}`,
+      )
       .join("\n\n");
   },
   {
@@ -23,5 +29,5 @@ export const docsRetriever = tool(
         .string()
         .describe("User question to search in agriculture knowledge base"),
     }),
-  }
+  },
 );
