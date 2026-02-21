@@ -161,6 +161,31 @@ const getOfficerForwardedQueries = asyncHandler(async (req, res) => {
           targetOfficers: new mongoose.Types.ObjectId(user._id),
         },
       },
+      {
+        $lookup: {
+          from: "users",
+          localField: "forwardedBy",
+          foreignField: "_id",
+          as: "forwardedBy",
+          pipeline: [
+            {
+              $project: {
+                name: 1,
+                email: 1,
+                phone: 1,
+                address: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          forwardedBy: {
+            $arrayElemAt: ["$forwardedBy", 0],
+          },
+        },
+      },
     ],
     paginateOptions,
   );
@@ -168,21 +193,89 @@ const getOfficerForwardedQueries = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, queries));
 });
 
-const getForwaredQuery = asyncHandler(async (req, res) => {
+const getForwaredQueryById = asyncHandler(async (req, res) => {
   const { forwardedQueryId } = req.params;
-  // const { conversation } = req.query;
+  const status = req.query.status;
+
   if (!isValidObjectId(forwardedQueryId)) {
     throw new ApiError(400, "Invalid forwardedQueryId");
   }
-  const forwardedQuery = await ForwardedQuery.findById(forwardedQueryId);
-  if (!forwardedQuery) {
+
+  const queries = await ForwardedQuery.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(forwardedQueryId as string),
+        targetOfficers: new mongoose.Types.ObjectId(req.user._id),
+        ...(status ? { status: status as string } : {}),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "forwardedBy",
+        foreignField: "_id",
+        as: "forwardedBy",
+        pipeline: [
+          {
+            $project: {
+              name: 1,
+              email: 1,
+              phone: 1,
+              address: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $lookup: {
+        from: "conversations",
+        localField: "conversation",
+        foreignField: "_id",
+        as: "conversation",
+        pipeline: [
+          {
+            $lookup: {
+              from: "messages",
+              localField: "_id",
+              foreignField: "conversation",
+              as: "messages",
+              pipeline: [
+                {
+                  $project: {
+                    senderRole: 1,
+                    text: 1,
+                    files: 1,
+                    createdAt: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $project: {
+              title: 1,
+              messages: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        forwardedBy: {
+          $arrayElemAt: ["$forwardedBy", 0],
+        },
+      },
+    },
+  ]);
+
+  if (!queries || queries.length === 0) {
     throw new ApiError(404, "Forwarded query not found");
   }
-  console.log("forwardedQuery", forwardedQuery);
-  const officerId = req.user._id;
-  if (!forwardedQuery.targetOfficers.includes(officerId)) {
-    throw new ApiError(403, "You are not authorized to view this query");
-  }
+
+  const forwardedQuery = queries[0];
+
   return res
     .status(200)
     .json(
@@ -242,7 +335,7 @@ const answerForwardedQuery = asyncHandler(async (req, res) => {
 export {
   getMyForwardedQueries,
   getOfficerForwardedQueries,
-  getForwaredQuery,
+  getForwaredQueryById,
   forwardQuery,
   answerForwardedQuery,
 };
