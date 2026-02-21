@@ -2,12 +2,12 @@ import { Router } from "express";
 import {
   answerForwardedQuery,
   forwardQuery,
-  getForwaredQuery,
+  getForwaredQueryById,
   getMyForwardedQueries,
   getOfficerForwardedQueries,
 } from "../controllers/forwardedQueries.controller";
 import { verifyUser } from "../middlewares/auth.middleware";
-import { UserRole } from "../types/enums";
+import { UserRole } from  "../types/enums";
 
 const router = Router();
 
@@ -28,7 +28,7 @@ router.get(
 router.get(
   "/:forwardedQueryId",
   verifyUser({ requiredRole: UserRole.OFFICER }),
-  getForwaredQuery,
+  getForwaredQueryById,
 );
 
 router.patch(
