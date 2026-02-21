@@ -203,7 +203,11 @@ const getUserConversationMessages = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiResponse(200, messages, "User conversation fetched successfully"),
+      new ApiResponse(200, {
+        _id: conversation._id,
+        title: conversation.title,
+        ...messages
+      }, "User conversation fetched successfully"),
     );
 });
 const testStreamEvents = asyncHandler(async (req, res) => {
