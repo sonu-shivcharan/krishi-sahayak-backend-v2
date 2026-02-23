@@ -4,6 +4,7 @@ import { ApiError } from "../utils/apiError";
 import { RegisterUserInput } from "../validations/user.validation";
 import { User as ClerkUser } from "@clerk/express";
 import { asyncHandler } from "../utils/asyncHandler";
+import { ApiResponse } from "../utils/apiResponse";
 
 /**
  * Register/Create a new user in MongoDB after Clerk authentication
@@ -111,47 +112,6 @@ export const getCurrentUser = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Get user by ID
- */
-export const getUserById = async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.params;
-
-    const user = await User.findById(userId).select("-__v");
-
-    if (!user) {
-      return res.status(404).json({
-        error: "User not found",
-      });
-    }
-
-    res.status(200).json({
-      statusCode: 200,
-      message: "User retrieved successfully",
-      data: user,
-      success: true,
-    });
-  } catch (error: any) {
-    console.error("Get user by ID error:", error);
-
-    if (error.name === "CastError") {
-      return res.status(400).json({
-        statusCode: 400,
-        message: "Invalid user ID format",
-        errors: [],
-        success: false,
-      });
-    }
-
-    res.status(500).json({
-      statusCode: 500,
-      message: "Failed to get user",
-      errors: [],
-      success: false,
-    });
-  }
-};
 
 /**
  * Update user profile
@@ -232,5 +192,33 @@ export const updateUser = async (req: Request, res: Response) => {
       errors: [],
       success: false,
     });
+  }
+};
+
+
+
+// officer only
+/**
+ * Get user by ID 
+ */
+export const getUserById = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await User.findById(userId).select("-__v");
+
+    if (!user) {
+      return res.status(404).json(  new ApiResponse(404, null, "User not found"));
+    }
+
+    return res.status(200).json(  new ApiResponse(200, user, "User retrieved successfully")  );
+  } catch (error: any) {
+    console.error("Get user by ID error:", error);
+
+    if (error.name === "CastError") {
+      return res.status(400).json(new ApiResponse(400, null, "Invalid user ID format"));
+    }
+
+    return res.status(500).json(new ApiResponse(500, null, "Failed to get user"));
   }
 };

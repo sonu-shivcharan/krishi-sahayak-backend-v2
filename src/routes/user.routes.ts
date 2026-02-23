@@ -8,12 +8,14 @@ import {
 import {
   verifyClerkToken,
   verifyClerkTokenForRegistration,
+  verifyUser,
 } from "../middlewares/auth.middleware";
 import { validate } from "../middlewares/validation.middleware";
 import {
   registerUserSchema,
   updateUserSchema,
 } from "../validations/user.validation";
+import { UserRole } from "../types/enums";
 
 const router = Router();
 
@@ -26,7 +28,7 @@ router.post(
 
 // Protected routes (require authentication)
 router.get("/me", verifyClerkToken, getCurrentUser);
-router.get("/:userId", getUserById);
 router.patch("/me", verifyClerkToken, validate(updateUserSchema), updateUser);
 
+router.get("/:userId",verifyUser({requiredRole:UserRole.OFFICER}), getUserById);
 export default router;
