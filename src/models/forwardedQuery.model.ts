@@ -15,6 +15,12 @@ const ForwardedQuerySchema = new Schema<IForwardedQuery>(
       ref: "User",
       required: true,
     },
+    question: {
+      type: String,
+    },
+    summary: {
+      type: String,
+    },
     targetOfficers: [
       {
         type: Schema.Types.ObjectId,

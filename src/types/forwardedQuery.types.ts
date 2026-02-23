@@ -6,6 +6,8 @@ export interface IForwardedQuery {
   conversation: Types.ObjectId;
   forwardedBy: Types.ObjectId;
   targetOfficers: Types.ObjectId[];
+  question: string;
+  summary: string;
   location: {
     type: "Point";
     coordinates: [number, number]; // [lng, lat]
