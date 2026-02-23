@@ -80,6 +80,7 @@ const ForwardedQuerySchema = new Schema<IForwardedQuery>(
     },
     answer: String,
     answeredAt: Date,
+    reason: String,
     forwardedAt: {
       type: Date,
       default: Date.now,

@@ -20,5 +20,6 @@ export interface IForwardedQuery {
   answeredBy?: Types.ObjectId;
   answer?: string;
   answeredAt?: Date;
+  reason?: string;
   forwardedAt: Date;
 }
