@@ -21,6 +21,7 @@ export async function runAgentWithStatus({
     {
       context: {
         userId,
+        conversationId,
         region,
       },
       configurable: { thread_id: conversationId },
@@ -68,7 +69,7 @@ export async function executeAgent({
       messages: [new HumanMessage(query)],
     },
     {
-      context: { ...context },
+      context: { ...context, conversationId },
       configurable: { thread_id: conversationId },
       callbacks: [
         {

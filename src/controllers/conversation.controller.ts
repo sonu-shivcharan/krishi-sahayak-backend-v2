@@ -223,7 +223,7 @@ const testStreamEvents = asyncHandler(async (req, res) => {
     {
       streamMode: "updates",
       configurable: { thread_id: conversationId },
-      context: { userId: req.user._id.toString() },
+      context: { userId: req.user._id.toString(), conversationId },
     },
   );
 
