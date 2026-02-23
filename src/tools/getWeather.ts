@@ -1,7 +1,7 @@
 import { tool } from "langchain";
 import z from "zod";
 import axios from "axios";
-import { geocode } from "../helpers/location";
+import { geocode } from "../utils/location";
 
 export const getWeather = tool(
   async ({ location, lat, lng }) => {

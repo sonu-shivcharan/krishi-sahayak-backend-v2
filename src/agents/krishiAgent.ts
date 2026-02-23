@@ -1,5 +1,5 @@
 import { createAgent, createMiddleware, tool } from "langchain";
-import { llm } from "../config/llm";
+import { llm } from "../utils/llm";
 import { docsRetriever } from "../tools/retrieveDocs";
 import { MongoDBSaver } from "@langchain/langgraph-checkpoint-mongodb";
 import { MongoClient } from "mongodb";

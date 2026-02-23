@@ -5,7 +5,7 @@ import { MessageSenderRole, MessageType } from "../types/enums";
 import { ApiError } from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiResponse } from "../utils/apiResponse";
-import { llm } from "../config/llm";
+import { llm } from "../utils/llm";
 import { krishiAgent } from "../agents/krishiAgent";
 import { HumanMessage } from "langchain";
 

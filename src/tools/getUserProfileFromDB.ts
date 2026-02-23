@@ -1,6 +1,6 @@
 import { tool } from "langchain";
 import z from "zod";
-import { getUserById } from "../helpers/user.helpers";
+import { getUserById } from "../utils/user";
 
 export const getUserProfileFromDB = tool(
   async (_, { context }) => {

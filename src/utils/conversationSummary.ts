@@ -1,5 +1,5 @@
 import { checkpointer } from "../agents/krishiAgent";
-import { llm } from "../config/llm";
+import { llm } from "./llm";
 import {
   HumanMessage,
   SystemMessage,

@@ -3,7 +3,7 @@ import { Conversation, ForwardedQuery, User, Notification } from "../models";
 import { ApiError } from "../utils/apiError";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiResponse } from "../utils/apiResponse";
-import { reverseGeocode } from "../helpers/location";
+import { reverseGeocode } from "../utils/location";
 import {
   UserRole,
   NotificationType,

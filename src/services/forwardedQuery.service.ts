@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:stream";
 import { QDRANT_COLLECTIONS, qdrantClient } from "../utils/qdrantStore";
 import { ForwardedQuery } from "../models";
-import { generateConversationSummary } from "../helpers/conversationSummary";
+import { generateConversationSummary } from "../utils/conversationSummary";
 import logger from "../utils/logger";
 
 type IngestForwardedQueryProp = {
