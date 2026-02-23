@@ -72,12 +72,14 @@ import chatRoutes from "./routes/chat.routes";
 import userRoutes from "./routes/user.routes";
 import conversationRoutes from "./routes/conversation.routes";
 import forwardedQueriesRoutes from "./routes/forwardedQueries.routes";
+import notificationRoutes from "./routes/notification.routes";
 
 app.use("/api/v1/chat", chatRoutes);
 app.use("/api/v1/users", userRoutes);
 
 app.use("/api/v1/conversations", conversationRoutes);
 app.use("/api/v1/forwarded-queries", forwardedQueriesRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
 
 //global error handler
 app.use(
