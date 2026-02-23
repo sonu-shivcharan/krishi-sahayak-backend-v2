@@ -65,3 +65,27 @@ Officer Summary (in ${language}):
     return "Failed to generate conversation summary.";
   }
 };
+
+export const generateQuestionFromSummary = async (summary: string): Promise<string> => {
+  try {
+    const questionPrompt = `
+Based on the following conversation summary, generate a concise, 1 or 2 sentence question that represents the main issue or request of the farmer.
+
+Summary:
+${summary}
+
+Question:`;
+
+    const response = await llm.invoke([
+      new SystemMessage(
+        "You are a helpful assistant that generates a concise question from a summary.",
+      ),
+      new HumanMessage(questionPrompt),
+    ]);
+
+    return response.content as string;
+  } catch (error) {
+    console.error("Error generating question from summary:", error);
+    return "What is the farmer's question?";
+  }
+};
