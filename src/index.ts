@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { app } from "./app";
 import connectDB from "./db/connectDB";
-
+import { initQdrant } from "./utils/qdrantStore";
 
 const PORT = process.env.PORT || 3000;
 
@@ -9,7 +9,8 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to KrishiSahayak" });
 });
 
-connectDB().then(()=>{
+connectDB().then(async ()=>{
+  await initQdrant();
   app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
   });
