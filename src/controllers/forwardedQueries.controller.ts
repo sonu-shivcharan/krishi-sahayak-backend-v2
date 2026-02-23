@@ -90,6 +90,10 @@ const forwardQuery = asyncHandler(async (req, res) => {
   }
 
   const createdQuery = await ForwardedQuery.create(queryPayload);
+  // trigger the event to generate summary and question
+  forwardQueryService.forwardQuery({
+    forwardedQueryId: createdQuery._id.toString(),
+  });
 
   // 4. Send Notifications
   if (targetofficerIds.length > 0) {
