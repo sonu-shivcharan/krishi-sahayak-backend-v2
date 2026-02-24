@@ -13,9 +13,9 @@ const upload = multer({ storage });
 // Only allow officers to upload government schemes
 router.post(
   "/upload",
-  verifyUser({ requiredRole: UserRole.FARMER }),
+  verifyUser({ requiredRole: UserRole.OFFICER }),
   upload.single("file"),
-  uploadFile
+  uploadFile,
 );
 
 export default router;
