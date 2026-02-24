@@ -34,7 +34,7 @@ export const initQdrant = async () => {
         },
       );
     }
-    
+
     const govSchemesExists = collections.collections.some(
       (c) => c.name === QDRANT_COLLECTIONS.GOVERNMENT_SCHEMES,
     );
@@ -63,7 +63,7 @@ export const initQdrant = async () => {
         wait: true,
       },
     );
-    
+
     await qdrantClient.createPayloadIndex(
       QDRANT_COLLECTIONS.GOVERNMENT_SCHEMES,
       {
@@ -74,8 +74,9 @@ export const initQdrant = async () => {
     );
     console.log("Qdrant initialization complete.");
   } catch (error) {
-    console.log("Qdrant init note: Index might already exist or collection is being initialized.");
+    console.log(
+      "Qdrant init note: Index might already exist or collection is being initialized.",
+    );
     // We don't throw here to prevent server crash if index exists, but log it
   }
 };
-
