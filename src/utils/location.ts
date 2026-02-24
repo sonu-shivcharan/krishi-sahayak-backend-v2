@@ -5,9 +5,9 @@ export const reverseGeocode = async (
   lng: number,
 ): Promise<{ district?: string; taluka?: string }> => {
   try {
-    const apiKey = process.env.GOOGLE_MAPS_API;
+    const apiKey = process.env.GOOGLE_API_KEY;
     if (!apiKey) {
-      console.warn("GOOGLE_MAPS_API key is missing");
+      console.warn("GOOGLE_API_KEY key is missing");
       return {};
     }
 
@@ -45,9 +45,9 @@ export const geocode = async (
   address: string,
 ): Promise<{ lat?: number; lng?: number }> => {
   try {
-    const apiKey = process.env.GOOGLE_MAPS_API;
+    const apiKey = process.env.GOOGLE_API_KEY;
     if (!apiKey) {
-      console.warn("GOOGLE_MAPS_API key is missing");
+      console.warn("GOOGLE_API_KEY key is missing");
       return {};
     }
 
