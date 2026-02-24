@@ -73,6 +73,8 @@ import userRoutes from "./routes/user.routes";
 import conversationRoutes from "./routes/conversation.routes";
 import forwardedQueriesRoutes from "./routes/forwardedQueries.routes";
 import notificationRoutes from "./routes/notification.routes";
+import fileRoutes from "./routes/file.routes";
+import "./services/ingestion.service"; // Initialize ingestion service listener
 
 app.use("/api/v1/chat", chatRoutes);
 app.use("/api/v1/users", userRoutes);
@@ -80,6 +82,7 @@ app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/conversations", conversationRoutes);
 app.use("/api/v1/forwarded-queries", forwardedQueriesRoutes);
 app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/files", fileRoutes);
 
 //global error handler
 app.use(
