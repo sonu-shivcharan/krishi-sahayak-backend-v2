@@ -17,7 +17,7 @@ export const knowledgeBaseSearch = tool(
     });
 
     return result.points
-      .map((point, i) => `[Knowledge Base Point ${i + 1}]\n${point.payload?.page_content ?? ""}`)
+      .map((point, i) => `[Knowledge Base Point ${i + 1}]\n${point.payload?.pageContent ?? point.payload?.page_content ?? ""}`)
       .join("\n\n") || "No matching documents found in the Knowledge Base.";
   },
   {
@@ -74,7 +74,7 @@ export const specializedCategorySearch = tool(
     });
 
     return result.points
-      .map((point, i) => `[Category: ${category}] Point ${i + 1}:\n${point.payload?.page_content ?? ""}`)
+      .map((point, i) => `[Category: ${category}] Point ${i + 1}:\n${point.payload?.pageContent ?? point.payload?.page_content ?? ""}`)
       .join("\n\n") || `No specific info found for ${category}.`;
   },
   {
@@ -83,6 +83,33 @@ export const specializedCategorySearch = tool(
     schema: z.object({
       query: z.string().describe("The search query"),
       category: z.string().describe("The crop or category to focus on (e.g. Wheat, Pest, Irrigation)"),
+    }),
+  }
+);
+
+/**
+ * Searches for government schemes and subsidies in the specialized collection.
+ */
+export const governmentSchemesSearch = tool(
+  async ({ query }) => {
+    const result = await qdrantClient.query(QDRANT_COLLECTIONS.GOVERNMENT_SCHEMES, {
+      query: {
+        text: query,
+        model: "sentence-transformers/all-minilm-l6-v2",
+      },
+      limit: 5,
+      with_payload: true,
+    });
+
+    return result.points
+      .map((point, i) => `[Government Scheme Point ${i + 1}]\n${point.payload?.pageContent ?? point.payload?.page_content ?? ""}`)
+      .join("\n\n") || "No government schemes found matching your query.";
+  },
+  {
+    name: "governmentSchemesSearch",
+    description: "Search for government schemes, subsidies, and eligibility criteria for farmers.",
+    schema: z.object({
+      query: z.string().describe("The search query for government schemes"),
     }),
   }
 );

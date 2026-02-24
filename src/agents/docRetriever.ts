@@ -1,19 +1,21 @@
 import { createAgent } from "langchain";
 import { llm } from "../utils/llm";
-import { 
-  knowledgeBaseSearch, 
-  expertAnswersSearch, 
-  specializedCategorySearch 
+import {
+  knowledgeBaseSearch,
+  expertAnswersSearch,
+  specializedCategorySearch,
+  governmentSchemesSearch,
 } from "../tools/docRetrievalTools";
 import { checkpointer } from "./checkpointer";
 
 const systemPrompt = `
 You are the "DocRetriever" subagent for Krishi Sahayak. Your sole purpose is to gather the most relevant and accurate information from our various document stores.
 
-You have access to three specialized tools:
+You have access to four specialized tools:
 1. "knowledgeBaseSearch": Use this for general agricultural guidelines, crop cycles, and standard practices.
 2. "expertAnswersSearch": Use this to find how human experts (Agriculture Officers) have answered similar specific queries in the past.
 3. "specializedCategorySearch": Use this when the user's query is clearly focused on a specific crop or technical category.
+4. "governmentSchemesSearch": Use this when the user asks about government schemes, subsidies, loans, or financial aid for farmers.
 
 Instructions:
 - Analyze the user's request and decide which tool(s) will provide the best information.
@@ -28,7 +30,12 @@ export const docRetriever = createAgent({
   name: "DocRetriever",
   systemPrompt,
   checkpointer,
-  tools: [knowledgeBaseSearch, expertAnswersSearch, specializedCategorySearch],
+  tools: [
+    knowledgeBaseSearch,
+    expertAnswersSearch,
+    specializedCategorySearch,
+    governmentSchemesSearch,
+  ],
 });
 
 /**
@@ -44,8 +51,9 @@ export const docRetrieverTool = tool(
       {
         messages: [new HumanMessage(query)],
       },
-      config
+      config,
     );
+    console.log("result", result);
 
     // Return the last message from the subagent's response
     const lastMessage = result.messages[result.messages.length - 1];
@@ -53,9 +61,14 @@ export const docRetrieverTool = tool(
   },
   {
     name: "docRetriever",
-    description: "A specialized subagent that searches multiple document sources (knowledge base, expert answers, category-specific docs) to find the best agricultural information.",
+    description:
+      "A specialized subagent that searches multiple document sources (knowledge base, expert answers, category-specific docs) to find the best agricultural information.",
     schema: z.object({
-      query: z.string().describe("The specific question or topic to search for documents on."),
+      query: z
+        .string()
+        .describe(
+          "The specific question or topic to search for documents on in English language",
+        ),
     }),
-  }
+  },
 );

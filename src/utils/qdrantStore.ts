@@ -9,6 +9,7 @@ export const qdrantClient = new QdrantClient({
 export const QDRANT_COLLECTIONS = {
   FORWARDED_QUERY_ANSWERS: "forwarded_query_answers",
   COLLECTION_NAME: "krishi_sahayak",
+  GOVERNMENT_SCHEMES: "government_schemes",
 };
 export const COLLECTION_NAME = "krishi_sahayak";
 
@@ -33,12 +34,40 @@ export const initQdrant = async () => {
         },
       );
     }
+    
+    const govSchemesExists = collections.collections.some(
+      (c) => c.name === QDRANT_COLLECTIONS.GOVERNMENT_SCHEMES,
+    );
+
+    if (!govSchemesExists) {
+      console.log(
+        `Creating collection: ${QDRANT_COLLECTIONS.GOVERNMENT_SCHEMES}`,
+      );
+      await qdrantClient.createCollection(
+        QDRANT_COLLECTIONS.GOVERNMENT_SCHEMES,
+        {
+          vectors: {
+            size: 384, // size for sentence-transformers/all-minilm-l6-v2
+            distance: "Cosine",
+          },
+        },
+      );
+    }
 
     console.log("Ensuring Qdrant payload indices...");
     await qdrantClient.createPayloadIndex(
       QDRANT_COLLECTIONS.FORWARDED_QUERY_ANSWERS,
       {
         field_name: "forwardedQueryId",
+        field_schema: "keyword",
+        wait: true,
+      },
+    );
+    
+    await qdrantClient.createPayloadIndex(
+      QDRANT_COLLECTIONS.GOVERNMENT_SCHEMES,
+      {
+        field_name: "fileId",
         field_schema: "keyword",
         wait: true,
       },
