@@ -53,7 +53,6 @@ export const docRetrieverTool = tool(
       },
       config,
     );
-    console.log("result", result);
 
     // Return the last message from the subagent's response
     const lastMessage = result.messages[result.messages.length - 1];
