@@ -4,7 +4,7 @@ import axios from "axios";
 import { geocode } from "../utils/location";
 
 export const getWeather = tool(
-  async ({ location, lat, lng }) => {
+  async ({ location, days = 1, lat, lng }) => {
     try {
       let latitude = lat;
       let longitude = lng;
@@ -54,14 +54,24 @@ export const getWeather = tool(
       const condition =
         weatherCodes[current.weather_code] || "Unknown condition";
 
-      const locationName = location ? location : `coordinates (${latitude}, ${longitude})`;
+      const locationName = location
+        ? location
+        : `coordinates (${latitude}, ${longitude})`;
+
+      const forecastLines = daily.time
+        .slice(0, days)
+        .map((date: string, i: number) => {
+          const dayLabel = i === 0 ? "Today" : i === 1 ? "Tomorrow" : date;
+          return `- Forecast (${dayLabel}): High: ${daily.temperature_2m_max[i]}°C, Low: ${daily.temperature_2m_min[i]}°C, Rain Chance: ${daily.precipitation_probability_max[i]}%`;
+        })
+        .join("\n");
 
       return `Weather in ${locationName}:
-- Condition: ${condition}
-- Temperature: ${current.temperature_2m}°C
-- Humidity: ${current.relative_humidity_2m}%
-- Wind Speed: ${current.wind_speed_10m} km/h
-- Forecast (Today): High: ${daily.temperature_2m_max[0]}°C, Low: ${daily.temperature_2m_min[0]}°C, Rain Chance: ${daily.precipitation_probability_max[0]}%`;
+      - Condition: ${condition}
+      - Temperature: ${current.temperature_2m}°C
+      - Humidity: ${current.relative_humidity_2m}%
+      - Wind Speed: ${current.wind_speed_10m} km/h
+      ${forecastLines}`;
     } catch (error) {
       console.error("Error fetching weather:", error);
       return "Sorry, I encountered an error while fetching the weather information.";
@@ -76,6 +86,12 @@ export const getWeather = tool(
         .string()
         .optional()
         .describe("The city, town, or village name (e.g., 'Pune', 'Nashik')"),
+      days: z
+        .number()
+        .optional()
+        .describe(
+          "Number of days from today for which the weather forecast is requested 1 for today and 2 for tommorrow",
+        ),
       lat: z.number().optional().describe("Latitude of the location"),
       lng: z.number().optional().describe("Longitude of the location"),
     }),
