@@ -10,6 +10,7 @@ export const QDRANT_COLLECTIONS = {
   FORWARDED_QUERY_ANSWERS: "forwarded_query_answers",
   COLLECTION_NAME: "krishi_sahayak",
   GOVERNMENT_SCHEMES: "government_schemes",
+  CATEGORY_SEARCH: "krishi_sahayak_main",
 };
 export const COLLECTION_NAME = "krishi_sahayak";
 

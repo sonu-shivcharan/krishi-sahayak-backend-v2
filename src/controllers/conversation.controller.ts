@@ -41,7 +41,7 @@ const startConversation = asyncHandler(async (req, res) => {
   };
   const conversationTitle = await generateConversationTitle(message);
   const conversation = await createConversation(userId, conversationTitle);
-
+  console.log("message", message);
   const newMessage = await Message.create({
     conversation: conversation._id.toString(),
     sender: userId,
@@ -200,15 +200,17 @@ const getUserConversationMessages = asyncHandler(async (req, res) => {
       ...options,
     },
   );
-  return res
-    .status(200)
-    .json(
-      new ApiResponse(200, {
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
         _id: conversation._id,
         title: conversation.title,
-        ...messages
-      }, "User conversation fetched successfully"),
-    );
+        ...messages,
+      },
+      "User conversation fetched successfully",
+    ),
+  );
 });
 const testStreamEvents = asyncHandler(async (req, res) => {
   res.setHeader("Content-Type", "text/event-stream");
