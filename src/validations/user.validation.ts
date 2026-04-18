@@ -20,9 +20,9 @@ export const registerUserSchema = z.object({
     profileImage: z.url("Invalid profile image URL").optional(),
     address: z.string().min(1, "Address is required").trim(),
     location: locationSchema.optional(),
-    // role: z.enum(UserRole, {
-    //   message: `Role must be one of: ${Object.values(UserRole).join(", ")}`,
-    // }),
+    role: z.enum(UserRole, {
+      message: `Role must be one of: ${Object.values(UserRole).join(", ")}`,
+    }),
   }),
 });
 
