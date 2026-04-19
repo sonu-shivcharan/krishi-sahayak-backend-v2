@@ -46,6 +46,6 @@ export const llm =
   process.env.LLM_PROVIDER === "google"
     ? getLLM({ model: "gemini-2.5-flash", provider: "google" })
     : getLLM({
-        model: "openai/gpt-oss-20b",
+        model: "llama-3.3-70b-versatile",
         provider: "groq",
       });
