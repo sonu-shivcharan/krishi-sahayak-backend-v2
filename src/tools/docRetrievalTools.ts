@@ -5,6 +5,7 @@ import {
   COLLECTION_NAME,
   QDRANT_COLLECTIONS,
 } from "../utils/qdrantStore";
+import logger from "../utils/logger";
 
 /**
  * Searches the official agriculture knowledge base using semantic search.
@@ -123,14 +124,14 @@ export const specializedCategorySearch = tool(
               ? [{ key: "crop", match: { value: crop.toLowerCase() } }]
               : []),
 
-            ...(queryType
-              ? [
-                  {
-                    key: "query_type",
-                    match: { value: QUERY_TYPE_MAP[queryType] },
-                  },
-                ]
-              : []),
+            // ...(queryType
+            //   ? [
+            //       {
+            //         key: "query_type",
+            //         match: { value: QUERY_TYPE_MAP[queryType] },
+            //       },
+            //     ]
+            //   : []),
           ],
         },
 
@@ -140,7 +141,7 @@ export const specializedCategorySearch = tool(
     );
 
     if (!result.points?.length) {
-      console.log("⚠️ No filtered results, retrying without filters...");
+      logger.info(" No filtered results, retrying without filters...");
 
       const fallback = await qdrantClient.query(
         QDRANT_COLLECTIONS.CATEGORY_SEARCH,
@@ -177,9 +178,9 @@ export const specializedCategorySearch = tool(
       query: z.string().describe("User query"),
       crop: z.string().optional().describe("Crop name (e.g. wheat, rice)"),
       queryType: z
-        .string()
+        .enum(Object.values(QUERY_TYPE_MAP))
         .optional()
-        .describe(`Query type (${Object.keys(QUERY_TYPE_MAP).toString()})`),
+        .describe(`Query type`),
     }),
   },
 );

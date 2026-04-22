@@ -1,4 +1,4 @@
-import { createAgent } from "langchain";
+import { createAgent, toolCallLimitMiddleware } from "langchain";
 import { llm } from "../utils/llm";
 import {
   knowledgeBaseSearch,
@@ -24,6 +24,11 @@ Instructions:
 - If no information is found, state that clearly and suggest what other details might help in the search.
 - Do not make up information; only report what you retrieve.
 `;
+const tollCallRateLimiter = toolCallLimitMiddleware({
+  runLimit: 5, // Max 5 tool calls per invocation
+  threadLimit: 20, // Max 20 tool calls for the whole session
+  exitBehavior: "end", // Stop execution when limit is reached
+});
 
 export const docRetriever = createAgent({
   model: llm,
@@ -36,6 +41,7 @@ export const docRetriever = createAgent({
     specializedCategorySearch,
     governmentSchemesSearch,
   ],
+  middleware: [tollCallRateLimiter],
 });
 
 /**
