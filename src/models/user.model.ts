@@ -30,9 +30,8 @@ const LocationSchema = new Schema(
       },
     },
   },
-  { _id: false }
+  { _id: false },
 );
-
 
 const UserSchema = new Schema<IUser>(
   {
@@ -71,8 +70,18 @@ const UserSchema = new Schema<IUser>(
     role: {
       type: String,
       enum: Object.values(UserRole),
-      default: UserRole.FARMER
+      default: UserRole.FARMER,
     },
+    fcmTokens: [
+      {
+        token: String,
+        device: String,
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

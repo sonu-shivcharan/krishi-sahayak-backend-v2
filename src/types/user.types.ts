@@ -17,4 +17,9 @@ export interface IUser {
   role: UserRole;
   createdAt?: Date;
   updatedAt?: Date;
+  fcmTokens: {
+    token: string;
+    device?: string; // optional (chrome, android, etc)
+    createdAt: Date;
+  }[];
 }
