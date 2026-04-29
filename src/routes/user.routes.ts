@@ -4,6 +4,7 @@ import {
   getCurrentUser,
   getUserById,
   updateUser,
+  saveFCMToken,
 } from "../controllers/user.controller";
 import {
   verifyClerkToken,
@@ -30,5 +31,11 @@ router.post(
 router.get("/me", verifyClerkToken, getCurrentUser);
 router.patch("/me", verifyClerkToken, validate(updateUserSchema), updateUser);
 
-router.get("/:userId",verifyUser({requiredRole:UserRole.OFFICER}), getUserById);
+router.get(
+  "/:userId",
+  verifyUser({ requiredRole: UserRole.OFFICER }),
+  getUserById,
+);
+
+router.patch("/fcm-token", verifyClerkToken, saveFCMToken);
 export default router;
