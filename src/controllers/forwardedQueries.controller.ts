@@ -11,6 +11,7 @@ import {
 } from "../types/enums";
 import mongoose from "mongoose";
 import { forwardQueryService } from "../services/forwardedQuery.service";
+import { notificationService } from "../services/notification.service";
 
 // user access controllers
 const forwardQuery = asyncHandler(async (req, res) => {
@@ -107,7 +108,15 @@ const forwardQuery = asyncHandler(async (req, res) => {
         conversationId: conversationId,
       },
     }));
-
+    //sending the notifications to the officers
+    notifications.forEach((notification) => {
+      console.log("Creating notification:", notification);
+      notificationService.sendNotification({
+        userId: notification.user.toString(),
+        title: notification.title,
+        message: notification.message,
+      });
+    });
     await Notification.insertMany(notifications);
   }
 
