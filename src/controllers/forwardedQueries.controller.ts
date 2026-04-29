@@ -109,6 +109,7 @@ const forwardQuery = asyncHandler(async (req, res) => {
       },
     }));
     //sending the notifications to the officers
+
     notifications.forEach((notification) => {
       console.log("Creating notification:", notification);
       notificationService.sendNotification({

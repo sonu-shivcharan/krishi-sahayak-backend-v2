@@ -25,8 +25,6 @@ export const notificationService = new NotificationService();
 notificationService.on(
   "notification.send",
   async (payload: SendNotificationPayload) => {
-    console.log("Notification send event received with payload:", payload);
-
     const { userId, title, message } = payload;
     const user = await User.findById(userId);
     const fcmTokens = user?.fcmTokens || [];
