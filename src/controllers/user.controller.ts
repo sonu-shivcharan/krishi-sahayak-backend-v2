@@ -154,16 +154,19 @@ export const saveFCMToken = asyncHandler(async (req, res) => {
   if (!fcmToken?.trim()) {
     throw new ApiError(400, "FCM token is required");
   }
-  const user = await User.findByIdAndUpdate(
-    userId,
-    {
-      $addToSet: { fcmTokens: { token: fcmToken, device } }, // Add token to array if not already present
+  await User.findByIdAndUpdate(userId, {
+    $pull: { fcmTokens: { device } },
+  });
+
+  await User.findByIdAndUpdate(userId, {
+    $push: {
+      fcmTokens: {
+        token: fcmToken,
+        device,
+      },
     },
-    { new: true },
-  );
-  if (!user?.fcmTokens.find((fcm) => fcm.token === fcmToken)) {
-    throw new ApiError(500, "Failed to save FCM token");
-  }
+  });
+
   return res
     .status(200)
     .json(new ApiResponse(200, null, "FCM token saved successfully"));
