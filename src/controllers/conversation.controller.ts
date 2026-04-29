@@ -83,45 +83,56 @@ const sendMessage = asyncHandler(async (req, res) => {
     throw new ApiError(409, "Invalid conversationId");
   }
   const userId = req.user._id.toString();
+
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
+
   const send = (event: string, data: any) => {
     res.write(`event:${event}\ndata:${JSON.stringify(data)}\n\n`);
   };
 
-  const newMessage = await Message.create({
-    conversation: conversationId,
-    sender: userId,
-    senderRole: MessageSenderRole.FARMER,
-    type: MessageType.TEXT,
-    text: message,
-    files,
-  });
-  if (!newMessage) {
-    throw new ApiError(500, "failed to create a message");
+  try {
+    const newMessage = await Message.create({
+      conversation: conversationId,
+      sender: userId,
+      senderRole: MessageSenderRole.FARMER,
+      type: MessageType.TEXT,
+      text: message,
+      files,
+    });
+    if (!newMessage) {
+      throw new ApiError(500, "failed to create a message");
+    }
+    send("initial", {
+      messageId: newMessage._id.toString(),
+    });
+
+    const result = await executeAgent({
+      query: message,
+      conversationId: conversationId.toString(),
+      sendResponseFn: send,
+      context: { userId, region },
+    });
+
+    // creating ai message
+    await Message.create({
+      conversation: conversationId,
+      senderRole: MessageSenderRole.BOT,
+      type: MessageType.TEXT,
+      text: result,
+    });
+    send("end", null);
+  } catch (error) {
+    console.error("Error in sendMessage:", error);
+    send("error", {
+      message:
+        "An error occurred while processing your message. Please try again.",
+    });
+  } finally {
+    res.end();
   }
-  send("initial", {
-    messageId: newMessage._id.toString(),
-  });
-
-  const result = await executeAgent({
-    query: message,
-    conversationId: conversationId.toString(),
-    sendResponseFn: send,
-    context: { userId, region },
-  });
-
-  // creating ai message
-  await Message.create({
-    conversation: conversationId,
-    senderRole: MessageSenderRole.BOT,
-    type: MessageType.TEXT,
-    text: result,
-  });
-  send("end", null);
-  res.end();
 });
 
 const getUserConversations = asyncHandler(async (req, res) => {
