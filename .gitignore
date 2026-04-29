@@ -27,3 +27,4 @@ npm-debug.log*
 # Testing
 coverage/
 src/config/firebase.ts
+src/config/krishi-sahayak-v2-firebase-adminsdk.json
