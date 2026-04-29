@@ -54,23 +54,25 @@ export const registerUser = asyncHandler(async (req, res) => {
  * Get current user info (after Clerk authentication)
  * Requires authentication middleware
  */
-export const getCurrentUser = asyncHandler(async (req: Request, res: Response) => {
-  const clerkId = req.clerkUser?.id;
+export const getCurrentUser = asyncHandler(
+  async (req: Request, res: Response) => {
+    const clerkId = req.clerkUser?.id;
 
-  if (!clerkId) {
-    throw new ApiError(401, "Unauthorized: User ID not found");
-  }
+    if (!clerkId) {
+      throw new ApiError(401, "Unauthorized: User ID not found");
+    }
 
-  const user = await User.findOne({ clerkId }).select("-__v");
+    const user = await User.findOne({ clerkId }).select("-__v");
 
-  if (!user) {
-    throw new ApiError(404, "User not found. Please register first.");
-  }
+    if (!user) {
+      throw new ApiError(404, "User not found. Please register first.");
+    }
 
-  return res
-    .status(200)
-    .json(new ApiResponse(200, user, "User retrieved successfully"));
-});
+    return res
+      .status(200)
+      .json(new ApiResponse(200, user, "User retrieved successfully"));
+  },
+);
 
 /**
  * Update user profile
@@ -120,7 +122,7 @@ export const updateUser = asyncHandler(async (req: Request, res: Response) => {
 
 // officer only
 /**
- * Get user by ID 
+ * Get user by ID
  */
 export const getUserById = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.params;
@@ -142,4 +144,27 @@ export const getUserById = asyncHandler(async (req: Request, res: Response) => {
   return res
     .status(200)
     .json(new ApiResponse(200, user, "User retrieved successfully"));
-});
+});
+
+export const saveFCMToken = asyncHandler(async (req, res) => {
+  const fcmToken = req.body.fcmToken;
+  const device = req.body.device || "unknown";
+  const userId = req.user._id;
+
+  if (!fcmToken?.trim()) {
+    throw new ApiError(400, "FCM token is required");
+  }
+  const user = await User.findByIdAndUpdate(
+    userId,
+    {
+      $addToSet: { fcmTokens: { token: fcmToken, device } }, // Add token to array if not already present
+    },
+    { new: true },
+  );
+  if (!user?.fcmTokens.find((fcm) => fcm.token === fcmToken)) {
+    throw new ApiError(500, "Failed to save FCM token");
+  }
+  return res
+    .status(200)
+    .json(new ApiResponse(200, null, "FCM token saved successfully"));
+});
