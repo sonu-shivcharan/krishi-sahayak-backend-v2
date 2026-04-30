@@ -1,11 +1,12 @@
 import { tool } from "langchain";
 import z from "zod";
 import { Conversation, ForwardedQuery, User, Notification } from "../models";
-import { ApiError } from "../utils/apiError";
 import { reverseGeocode } from "../utils/location";
 import { UserRole, NotificationType } from "../types/enums";
 import { forwardQueryService } from "../services/forwardedQuery.service";
 import { isValidObjectId } from "mongoose";
+import { notificationService } from "../services/notification.service";
+import logger from "../utils/logger";
 
 export const forwardToOfficer = tool(
   async ({ reason }, { context }) => {
@@ -49,7 +50,7 @@ export const forwardToOfficer = tool(
       if (locationData) {
         const { district, taluka } = await reverseGeocode(
           locationData.lat,
-          locationData.lng
+          locationData.lng,
         );
         locationData.district = district;
         locationData.taluka = taluka;
@@ -111,7 +112,14 @@ export const forwardToOfficer = tool(
             conversationId: conversationId,
           },
         }));
-
+        notifications.forEach((notification) => {
+          logger.info("Creating notification:", notification);
+          notificationService.sendNotification({
+            userId: notification.user.toString(),
+            title: notification.title,
+            message: notification.message,
+          });
+        });
         await Notification.insertMany(notifications);
       }
 
@@ -123,9 +131,14 @@ export const forwardToOfficer = tool(
   },
   {
     name: "forwardToOfficer",
-    description: "Forwards the current conversation context to human Agriculture Officers for further assistance when the digital assistant cannot provide a complete answer. Only use this if you cannot find the answer in the knowledge base or if the user explicitly asks to talk to an officer.",
+    description:
+      "Forwards the current conversation context to human Agriculture Officers for further assistance when the digital assistant cannot provide a complete answer. Only use this if you cannot find the answer in the knowledge base or if the user explicitly asks to talk to an officer.",
     schema: z.object({
-      reason: z.string().describe("The reason why this query is being forwarded to a human officer."),
+      reason: z
+        .string()
+        .describe(
+          "The reason why this query is being forwarded to a human officer.",
+        ),
     }),
-  }
+  },
 );
