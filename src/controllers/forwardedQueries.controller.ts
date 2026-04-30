@@ -12,6 +12,7 @@ import {
 import mongoose from "mongoose";
 import { forwardQueryService } from "../services/forwardedQuery.service";
 import { notificationService } from "../services/notification.service";
+import logger from "../utils/logger";
 
 // user access controllers
 const forwardQuery = asyncHandler(async (req, res) => {
@@ -111,7 +112,7 @@ const forwardQuery = asyncHandler(async (req, res) => {
     //sending the notifications to the officers
 
     notifications.forEach((notification) => {
-      console.log("Creating notification:", notification);
+      logger.info("Creating notification:", notification);
       notificationService.sendNotification({
         userId: notification.user.toString(),
         title: notification.title,
