@@ -35,24 +35,48 @@ notificationService.on(
       );
       return;
     }
-    const tokens = fcmTokens.map((t) => t.token);
+
+    let resp = null;
     const notificationPayload = {
       notification: {
         title,
         body: message,
       },
-      tokens,
+      data: {
+        url: user?.role === "farmer" ? "/app" : "/dashboard",
+      },
     };
-    messaging
-      .sendEachForMulticast(notificationPayload)
-      .then((response) => {
-        console.log(
-          `Successfully sent notification to user ${userId}. Response:`,
-          response,
-        );
-      })
-      .catch((error) => {
-        console.error(`Error sending notification to user ${userId}:`, error);
+    try {
+      if (fcmTokens.length === 1) {
+        resp = await messaging.send({
+          ...notificationPayload,
+          token: fcmTokens[0].token,
+        });
+        return;
+      }
+
+      const tokens = fcmTokens.map((t) => t.token);
+      resp = await messaging.sendEachForMulticast({
+        ...notificationPayload,
+        tokens,
       });
+
+      if (resp.failureCount > 0) {
+        const failedTokens: string[] = [];
+        resp.responses.forEach((response, idx) => {
+          if (!response.success) {
+            failedTokens.push(tokens[idx]);
+          }
+        });
+        await User.updateOne(
+          { _id: userId },
+          { $pull: { fcmTokens: { token: { $in: failedTokens } } } },
+        );
+      }
+
+      console.log("resp", resp);
+    } catch (error) {
+      console.error(`Error sending notification to user ${userId}:`, error);
+    }
   },
 );
