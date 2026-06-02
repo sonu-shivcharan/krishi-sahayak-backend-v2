@@ -182,7 +182,7 @@ const getUserConversationMessages = asyncHandler(async (req, res) => {
       docs: "messages",
     },
   };
-  const sortBy = (req.query.sortBy as string) || "updatedAt";
+  const sortBy = (req.query.sortBy as string) || "createdAt";
   const sortDir = req.query.sortType === "asc" ? 1 : -1; // or '1'/'-1'
 
   if (!isValidObjectId(conversationId)) {
