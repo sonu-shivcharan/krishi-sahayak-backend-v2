@@ -1,7 +1,6 @@
 import { createAgent, toolCallLimitMiddleware } from "langchain";
 import { llm } from "../utils/llm";
 import {
-  knowledgeBaseSearch,
   expertAnswersSearch,
   specializedCategorySearch,
   governmentSchemesSearch,
@@ -9,18 +8,18 @@ import {
 import { checkpointer } from "./checkpointer";
 
 const systemPrompt = `
-You are the "DocRetriever" subagent for Krishi Sahayak. Your sole purpose is to gather the most relevant and accurate information from our various document stores.
+You are the "DocRetriever" subagent for Krishi Sahayak. Your sole purpose is to gather the most relevant and accurate information from our agricultural document stores.
 
-You have access to four specialized tools:
-1. "knowledgeBaseSearch": Use this for general agricultural guidelines, crop cycles, and standard practices.
-2. "expertAnswersSearch": Use this to find how human experts (Agriculture Officers) have answered similar specific queries in the past.
-3. "specializedCategorySearch": Use this when the user's query is clearly focused on a specific crop or technical category.
-4. "governmentSchemesSearch": Use this when the user asks about government schemes, subsidies, loans, or financial aid for farmers.
+You have access to three specialized tools:
+1. "specializedCategorySearch": Use this for all agricultural knowledge base searches, farming advice, crop guidelines, disease/pest management, fertilizer usage, irrigation, seed treatments, and standard practices. When applicable, provide the "crop" (e.g., wheat, rice, tomato) and/or "queryType" (e.g., 'Disease Management', 'Insect Management', 'Fertilizer Use and Availability', 'Nutrient Deficiency/Excessiveness Management', 'Irrigation Management', 'Seed Sowing And Treatment', 'Sowing Time and Weather') parameters to get precise, filtered results. If filtering is not applicable or crop is unknown, a general query will still retrieve relevant documents.
+2. "expertAnswersSearch": Use this to find how human experts (Agriculture Officers) have answered similar specific queries and solved past case studies.
+3. "governmentSchemesSearch": Use this when the user asks about government schemes, subsidies, loans, or financial aid for farmers.
 
 Instructions:
 - Analyze the user's request and decide which tool(s) will provide the best information.
+- Use "specializedCategorySearch" as the primary knowledge base search for crop, technical, and general agricultural queries.
 - You can use multiple tools if needed to provide a comprehensive set of documents.
-- Present the retrieved information clearly, noting the source (Knowledge Base vs. Expert Answer).
+- Present the retrieved information clearly, noting the source (Knowledge Base vs. Expert Answer vs. Government Scheme).
 - If no information is found, state that clearly and suggest what other details might help in the search.
 - Do not make up information; only report what you retrieve.
 `;
@@ -36,9 +35,8 @@ export const docRetriever = createAgent({
   systemPrompt,
   checkpointer,
   tools: [
-    knowledgeBaseSearch,
-    expertAnswersSearch,
     specializedCategorySearch,
+    expertAnswersSearch,
     governmentSchemesSearch,
   ],
   middleware: [tollCallRateLimiter],
@@ -67,7 +65,7 @@ export const docRetrieverTool = tool(
   {
     name: "docRetriever",
     description:
-      "A specialized subagent that searches multiple document sources (knowledge base, expert answers, category-specific docs) to find the best agricultural information.",
+      "A specialized subagent that searches agricultural knowledge bases (specialized category search, expert answers, government schemes) to find the best agricultural information.",
     schema: z.object({
       query: z
         .string()

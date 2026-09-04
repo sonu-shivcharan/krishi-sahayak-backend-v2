@@ -76,6 +76,16 @@ export const expertAnswersSearch = tool(
   },
 );
 
+export const CATEGORY_QUERY_TYPES = [
+  "Disease Management",
+  "Insect Management",
+  "Fertilizer Use and Availability",
+  "Nutrient Deficiency/Excessiveness Management",
+  "Irrigation Management",
+  "Seed Sowing And Treatment",
+  "Sowing Time and Weather",
+] as const;
+
 const QUERY_TYPE_MAP: Record<string, string> = {
   // Disease / Pest
   disease: "Disease Management",
@@ -105,11 +115,60 @@ const QUERY_TYPE_MAP: Record<string, string> = {
 };
 
 /**
- * Searches the knowledge base with a focus on specific crops or categories if possible.
+ * Formats points returned by Qdrant category search into readable document snippets.
+ */
+function formatCategoryPoints(points: any[]): string {
+  return (
+    points
+      .map((point, i) => {
+        const crop = point.payload?.crop ? `Crop: ${point.payload.crop}` : null;
+        const category = point.payload?.query_type
+          ? `Category: ${point.payload.query_type}`
+          : null;
+        const tags = [crop, category].filter(Boolean).join(" | ");
+        const header = tags ? `[${tags}] Point ${i + 1}` : `[Point ${i + 1}]`;
+
+        const question = point.payload?.question
+          ? `Question: ${point.payload.question}\n`
+          : "";
+        const answer =
+          point.payload?.answer ??
+          point.payload?.pageContent ??
+          point.payload?.page_content ??
+          "";
+
+        return `${header}\n${question}Answer: ${answer}`;
+      })
+      .join("\n\n") || "No matching documents found in the Knowledge Base."
+  );
+}
+
+/**
+ * Searches the agriculture knowledge base with support for specific crops or technical categories, falling back to unconstrained semantic search if needed.
  */
 export const specializedCategorySearch = tool(
   async ({ query, crop, queryType }) => {
-    console.log("query", query, queryType, crop);
+    logger.info(
+      `specializedCategorySearch called - Query: "${query}", Crop: "${crop || "none"}", QueryType: "${queryType || "none"}"`,
+    );
+
+    const mappedQueryType = queryType
+      ? QUERY_TYPE_MAP[queryType.toLowerCase()] || queryType
+      : undefined;
+
+    const filterMust: any[] = [];
+    if (crop) {
+      filterMust.push({ key: "crop", match: { value: crop.toLowerCase() } });
+    }
+    if (mappedQueryType) {
+      filterMust.push({
+        key: "query_type",
+        match: { value: mappedQueryType },
+      });
+    }
+
+    const filter = filterMust.length > 0 ? { must: filterMust } : undefined;
+
     const result = await qdrantClient.query(
       QDRANT_COLLECTIONS.CATEGORY_SEARCH,
       {
@@ -117,70 +176,57 @@ export const specializedCategorySearch = tool(
           text: `query: ${query}`,
           model: "intfloat/multilingual-e5-small",
         },
-
-        filter: {
-          must: [
-            ...(crop
-              ? [{ key: "crop", match: { value: crop.toLowerCase() } }]
-              : []),
-
-            // ...(queryType
-            //   ? [
-            //       {
-            //         key: "query_type",
-            //         match: { value: QUERY_TYPE_MAP[queryType] },
-            //       },
-            //     ]
-            //   : []),
-          ],
-        },
-
+        ...(filter ? { filter } : {}),
         limit: 5,
         with_payload: true,
       },
     );
 
     if (!result.points?.length) {
-      logger.info(" No filtered results, retrying without filters...");
-
-      const fallback = await qdrantClient.query(
-        QDRANT_COLLECTIONS.CATEGORY_SEARCH,
-        {
-          query: {
-            text: `query: ${query}`,
-            model: "intfloat/multilingual-e5-small",
+      if (filter) {
+        logger.info(
+          "No filtered results in category search, retrying without filters...",
+        );
+        const fallback = await qdrantClient.query(
+          QDRANT_COLLECTIONS.CATEGORY_SEARCH,
+          {
+            query: {
+              text: `query: ${query}`,
+              model: "intfloat/multilingual-e5-small",
+            },
+            limit: 5,
+            with_payload: true,
           },
-          limit: 5,
-          with_payload: true,
-        },
-      );
-      console.log("fallback", JSON.stringify(fallback));
-      return (
-        fallback.points
-          ?.map((point, i) => `Point ${i + 1}:\n${point.payload?.answer ?? ""}`)
-          .join("\n\n") || "No results found."
-      );
+        );
+        if (fallback.points?.length) {
+          return formatCategoryPoints(fallback.points);
+        }
+      }
+      return "No matching documents found in the Knowledge Base.";
     }
-    console.log("result.points", result.points);
-    return (
-      result.points
-        ?.map(
-          (point, i) =>
-            `[${point.payload?.crop} | ${point.payload?.query_type}] Point ${i + 1}:${point.payload?.question}\n${point.payload?.answer ?? ""}`,
-        )
-        .join("\n\n") || "No results found."
-    );
+
+    return formatCategoryPoints(result.points);
   },
   {
     name: "specializedCategorySearch",
-    description: "Search knowledge base using crop and query type filtering.",
+    description:
+      "Search the official agriculture knowledge base for general farming advice, crop practices, disease/pest management, fertilizer usage, and irrigation with optional crop and category filtering.",
     schema: z.object({
-      query: z.string().describe("User query"),
-      crop: z.string().optional().describe("Crop name (e.g. wheat, rice)"),
-      queryType: z
-        .enum(Object.values(QUERY_TYPE_MAP))
+      query: z
+        .string()
+        .describe("The search query for agricultural guidance or information"),
+      crop: z
+        .string()
         .optional()
-        .describe(`Query type`),
+        .describe(
+          "Optional crop name (e.g. wheat, rice, tomato, cotton) to filter results",
+        ),
+      queryType: z
+        .string()
+        .optional()
+        .describe(
+          "Optional query category type (e.g. 'Disease Management', 'Insect Management', 'Fertilizer Use and Availability', 'Nutrient Deficiency/Excessiveness Management', 'Irrigation Management', 'Seed Sowing And Treatment', 'Sowing Time and Weather')",
+        ),
     }),
   },
 );
